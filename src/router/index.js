@@ -29,6 +29,11 @@ const routes = [
     name: 'JsonToType',
     component: () => import('../views/tools/JsonToType.vue'),
   },
+  {
+    path: '/tools/mock-data-generator',
+    name: 'MockDataGenerator',
+    component: () => import('../views/tools/MockDataGenerator.vue'),
+  },
 ];
 
 const router = createRouter({

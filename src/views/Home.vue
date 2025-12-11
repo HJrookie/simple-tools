@@ -41,9 +41,14 @@ export default {
           to: "/tools/react-renderer",
         },
         {
-          title: 'JSON 转类型定义',
-          description: '将 JSON 数据快速转换为 TypeScript 接口或 JSDoc 类型，提升代码质量。',
-          to: '/tools/json-to-type',
+          title: "JSON 转类型定义",
+          description: "将 JSON 数据快速转换为 TypeScript 接口或 JSDoc 类型，提升代码质量。",
+          to: "/tools/json-to-type",
+        },
+        {
+          title: "Mock 数据生成器",
+          description: "根据一个 JSON 模板，快速生成大量结构相似但内容随机的模拟数据。",
+          to: "/tools/mock-data-generator",
         },
       ],
     };
