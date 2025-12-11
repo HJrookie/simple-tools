@@ -35,6 +35,11 @@ export default {
           description: "在线检查Nginx配置文件的语法并进行美化格式。",
           to: "/tools/nginx-formatter",
         },
+        {
+          title: "React/Next.js 渲染器",
+          description: "粘贴AI生成的React或Next.js组件代码，实时预览渲染效果。",
+          to: "/tools/react-renderer",
+        },
       ],
     };
   },

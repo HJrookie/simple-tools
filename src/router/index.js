@@ -19,6 +19,11 @@ const routes = [
     name: "NginxFormatter",
     component: () => import("../views/tools/NginxFormatter.vue"), // 懒加载新组件
   },
+  {
+    path: "/tools/react-renderer",
+    name: "ReactRenderer",
+    component: () => import("../views/tools/ReactRenderer.vue"),
+  },
 ];
 
 const router = createRouter({
