@@ -30,12 +30,11 @@ export default {
           description: "将 eventId=xxx,prjCod=yyy 格式的字符串转换为JSON对象。",
           to: "/tools/string-to-json",
         },
-        // 在这里可以继续添加更多的小工具
-        // {
-        //   title: '工具2',
-        //   description: '这是工具2的描述。',
-        //   to: '/tools/tool-2',
-        // },
+        {
+          title: "Nginx 配置检查 & 格式化",
+          description: "在线检查Nginx配置文件的语法并进行美化格式。",
+          to: "/tools/nginx-formatter",
+        },
       ],
     };
   },

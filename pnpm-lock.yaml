@@ -23,9 +23,15 @@ importers:
       mqtt:
         specifier: ^5.14.1
         version: 5.14.1
+      nginx-conf:
+        specifier: ^2.1.0
+        version: 2.1.0
       prettier:
         specifier: ^3.7.4
         version: 3.7.4
+      prismjs:
+        specifier: ^1.30.0
+        version: 1.30.0
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -1044,6 +1050,9 @@ packages:
   nanopop@2.4.2:
     resolution: {integrity: sha512-NzOgmMQ+elxxHeIha+OG/Pv3Oc3p4RU2aBhwWwAqDpXrdTbtRylbRLQztLy8dMMwfl6pclznBdfUhccEn9ZIzw==}
 
+  nginx-conf@2.1.0:
+    resolution: {integrity: sha512-tuf9hn1Zw+KFCjnLLNM9fxBC+OLxVZPSjcYK7PpwP6i0mt5UB7zLFQBjJKHIQDbs7D7uTcOHI4ELdtW/nUKllg==}
+
   node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
 
@@ -1092,6 +1101,10 @@ packages:
     resolution: {integrity: sha512-v6UNi1+3hSlVvv8fSaoUbggEM5VErKmmpGA7Pl3HF8V6uKY7rvClBOJlH6yNwQtfTueNkGVpOv/mtWL9L4bgRA==}
     engines: {node: '>=14'}
     hasBin: true
+
+  prismjs@1.30.0:
+    resolution: {integrity: sha512-DEvV2ZF2r2/63V+tK8hQvrR2ZGn10srHbXviTlcv7Kpzw8jWiNTqbVgjO3IY8RxrrOUF8VPMQQFysYYYv0YZxw==}
+    engines: {node: '>=6'}
 
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
@@ -2404,6 +2417,8 @@ snapshots:
 
   nanopop@2.4.2: {}
 
+  nginx-conf@2.1.0: {}
+
   node-addon-api@7.1.1:
     optional: true
 
@@ -2444,6 +2459,8 @@ snapshots:
       source-map-js: 1.2.1
 
   prettier@3.7.4: {}
+
+  prismjs@1.30.0: {}
 
   process-nextick-args@2.0.1: {}
 

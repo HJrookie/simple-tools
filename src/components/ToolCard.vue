@@ -1,6 +1,6 @@
 <!-- src/components/ToolCard.vue -->
 <template>
-    <a-card hoverable @click="goToTool">
+    <a-card hoverable @click="goToTool" style="height: 120px;">
       <a-card-meta :title="title" :description="description"></a-card-meta>
     </a-card>
   </template>
