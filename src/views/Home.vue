@@ -40,6 +40,11 @@ export default {
           description: "粘贴AI生成的React或Next.js组件代码，实时预览渲染效果。",
           to: "/tools/react-renderer",
         },
+        {
+          title: 'JSON 转类型定义',
+          description: '将 JSON 数据快速转换为 TypeScript 接口或 JSDoc 类型，提升代码质量。',
+          to: '/tools/json-to-type',
+        },
       ],
     };
   },

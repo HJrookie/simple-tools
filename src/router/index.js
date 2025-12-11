@@ -24,6 +24,11 @@ const routes = [
     name: "ReactRenderer",
     component: () => import("../views/tools/ReactRenderer.vue"),
   },
+  {
+    path: '/tools/json-to-type',
+    name: 'JsonToType',
+    component: () => import('../views/tools/JsonToType.vue'),
+  },
 ];
 
 const router = createRouter({
