@@ -25,14 +25,29 @@ const routes = [
     component: () => import("../views/tools/ReactRenderer.vue"),
   },
   {
-    path: '/tools/json-to-type',
-    name: 'JsonToType',
-    component: () => import('../views/tools/JsonToType.vue'),
+    path: "/tools/json-to-type",
+    name: "JsonToType",
+    component: () => import("../views/tools/JsonToType.vue"),
   },
   {
-    path: '/tools/mock-data-generator',
-    name: 'MockDataGenerator',
-    component: () => import('../views/tools/MockDataGenerator.vue'),
+    path: "/tools/mock-data-generator",
+    name: "MockDataGenerator",
+    component: () => import("../views/tools/MockDataGenerator.vue"),
+  },
+  {
+    path: "/tools/css-tailwind-converter",
+    name: "CssTailwindConverter",
+    component: () => import("../views/tools/CssTailwindConverter.vue"),
+  },
+  {
+    path: "/tools/json-fixer",
+    name: "JsonFixer",
+    component: () => import("../views/tools/JsonFixer.vue"),
+  },
+  {
+    path: "/tools/css-generator",
+    name: "InteractiveCssGenerator",
+    component: () => import("../views/tools/InteractiveCssGenerator.vue"),
   },
 ];
 

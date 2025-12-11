@@ -50,6 +50,21 @@ export default {
           description: "根据一个 JSON 模板，快速生成大量结构相似但内容随机的模拟数据。",
           to: "/tools/mock-data-generator",
         },
+        {
+          title: "CSS ↔ Tailwind 转换器",
+          description: "在标准 CSS/SCSS 写法和 Tailwind 原子类之间进行双向转换。",
+          to: "/tools/css-tailwind-converter",
+        },
+        {
+          title: "智能 JSON 修复器",
+          description: "自动修复格式错误的 JSON，支持移除注释、末尾逗号，或将其作为 JS 对象解析。",
+          to: "/tools/json-fixer",
+        },
+        {
+          title: "交互式 CSS 生成器",
+          description: "通过可视化操作面板快速生成精美的阴影、渐变和滤镜效果。",
+          to: "/tools/css-generator",
+        },
       ],
     };
   },

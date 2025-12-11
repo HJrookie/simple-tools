@@ -9,10 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-  "@ant-design/icons-vue": "^7.0.1",
+    "@ant-design/icons-vue": "^7.0.1",
     "@vitejs/plugin-vue-jsx": "^5.1.2",
     "ant-design-vue": "^4.2.6",
     "axios": "^1.13.2",
+    "diff": "^8.0.2",
     "mqtt": "^5.14.1",
     "nginx-conf": "^2.1.0",
     "prettier": "^3.7.4",
