@@ -18,7 +18,7 @@ import { Row, Col, TypographyTitle, TypographyParagraph } from "ant-design-vue";
 import ToolCard from "../components/ToolCard.vue";
 
 // 引入所有需要的图标
-import { CodeOutlined, ThunderboltOutlined, BugOutlined, FormatPainterOutlined, ToolOutlined, AppstoreAddOutlined, SwapOutlined, BuildOutlined } from "@ant-design/icons-vue";
+import { CodeOutlined, ThunderboltOutlined, BugOutlined, ShareAltOutlined, FormatPainterOutlined, ToolOutlined, AppstoreAddOutlined, SwapOutlined, BuildOutlined } from "@ant-design/icons-vue";
 import { Html5Outlined } from "@ant-design/icons-vue";
 
 // todo 增加我的那个文件上传的应用.
@@ -87,6 +87,15 @@ export default {
           description: "粘贴 HTML 代码片段，即时查看渲染后的页面效果，支持内联样式和脚本。",
           to: "/tools/html-renderer",
           icon: Html5Outlined,
+        },
+        // [新增] 添加 F2FF 文件快传工具的卡片
+        {
+          title: "局域网文件快传 (F2FF)",
+          description: "基于WebRTC的局域网文件互传工具，并支持通过Cloudflare R2进行文件中转。",
+          to: "https://f2ff.netlify.app/", // 使用完整的外部链接
+          // https://26f5849c.file-transfer-3fc.pages.dev/
+          // https://file.24992345.xyz/ 
+          icon: ShareAltOutlined,
         },
       ],
     };

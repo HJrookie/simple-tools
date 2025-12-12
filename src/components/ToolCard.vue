@@ -1,12 +1,10 @@
-<!-- src/components/ToolCard.vue (New Version) -->
+<!-- src/components/ToolCard.vue (Upgraded Version) -->
 <template>
   <div class="tool-card" @click="goToTool">
     <div class="card-content">
-      <!-- Icon Wrapper -->
       <div class="icon-wrapper">
         <component :is="icon" class="tool-icon" />
       </div>
-      <!-- Text Content -->
       <div class="text-content">
         <h3 class="card-title">{{ title }}</h3>
         <p class="card-description">{{ description }}</p>
@@ -22,12 +20,19 @@ export default {
     title: { type: String, required: true },
     description: { type: String, required: true },
     to: { type: String, required: true },
-    // 新增：接收一个图标组件作为 prop
     icon: { type: Object, required: true },
   },
   methods: {
     goToTool() {
-      this.$router.push(this.to);
+      // [关键改动] 判断链接类型
+      // 如果链接以 'http' 开头，则判定为外部链接
+      if (this.to.startsWith("http")) {
+        // 在新标签页中打开外部链接，更安全
+        window.open(this.to, "_blank", "noopener noreferrer");
+      } else {
+        // 否则，使用 vue-router进行内部路由跳转
+        this.$router.push(this.to);
+      }
     },
   },
 };
@@ -36,15 +41,13 @@ export default {
 <style scoped>
 .tool-card {
   /* height: 140px; */
-   /* 增加高度以容纳图标和更好的间距 */
   background-color: #ffffff;
-  border-radius: 12px; /* 更圆润的边角 */
+  border-radius: 12px;
   border: 1px solid #f0f0f0;
-  padding: 24px;
+  padding: 16px 24px;
   cursor: pointer;
   overflow: hidden;
   position: relative;
-  /* 平滑的过渡动画 */
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.04),
@@ -52,9 +55,7 @@ export default {
 }
 
 .tool-card:hover {
-  /* 悬浮时“上浮”效果 */
   transform: translateY(-5px);
-  /* 更明显的阴影 */
   box-shadow:
     0 10px 20px rgba(0, 0, 0, 0.08),
     0 4px 8px rgba(0, 0, 0, 0.06);
@@ -62,7 +63,7 @@ export default {
 
 .card-content {
   display: flex;
-  align-items: flex-start; /* 图标和文字顶部对齐 */
+  align-items: flex-start;
   height: 100%;
 }
 
@@ -71,9 +72,9 @@ export default {
 }
 
 .tool-icon {
-  font-size: 32px; /* 增大图标尺寸 */
-  color: #1677ff; /* Ant Design 主题色 */
-  margin-top: 4px; /* 微调图标位置 */
+  font-size: 32px;
+  color: #1677ff;
+  margin-top: 4px;
 }
 
 .text-content {
@@ -83,7 +84,7 @@ export default {
 
 .card-title {
   font-size: 16px;
-  font-weight: 600; /* 标题加粗 */
+  font-weight: 600;
   color: #1f2937;
   margin: 0 0 8px 0;
   line-height: 1.4;
@@ -91,10 +92,9 @@ export default {
 
 .card-description {
   font-size: 14px;
-  color: #6b7280; /* 描述文字颜色变浅 */
+  color: #6b7280;
   line-height: 1.5;
   margin: 0;
-  /* 最多显示两行，超出部分显示省略号 */
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
