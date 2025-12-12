@@ -17,9 +17,9 @@
             <template #icon><ApartmentOutlined /></template>
             格式化配置
           </a-button>
-          <a-button danger @click="clearContent">
+          <a-button type="primary" @click="copyToClipboard">
             <template #icon><ClearOutlined /></template>
-            清空内容
+            复制内容
           </a-button>
         </a-space>
       </div>
@@ -219,6 +219,15 @@ export default {
         this.validationStatus = "success";
         this.validationMessage = "配置已成功格式化！";
         message.success("格式化成功！");
+      });
+    },
+    copyToClipboard() {
+      if (!this.formattedConfig.trim()) {
+        message.warning("格式化结果为空！");
+        return;
+      }
+      navigator.clipboard.writeText(this.formattedConfig).then(() => {
+        message.success("格式化结果已复制到剪贴板！");
       });
     },
 
