@@ -54,6 +54,11 @@ const routes = [
     name: "HtmlRenderer",
     component: () => import("../views/tools/HtmlRenderer.vue"),
   },
+  {
+    path: "/tools/log-analyzer",
+    name: "LogAnalyzer",
+    component: () => import("../views/tools/LogAnalyzer.vue"),
+  },
 ];
 
 const router = createRouter({

@@ -18,7 +18,7 @@ import { Row, Col, TypographyTitle, TypographyParagraph } from "ant-design-vue";
 import ToolCard from "../components/ToolCard.vue";
 
 // 引入所有需要的图标
-import { CodeOutlined, ThunderboltOutlined, BugOutlined, ShareAltOutlined, FormatPainterOutlined, ToolOutlined, AppstoreAddOutlined, SwapOutlined, BuildOutlined } from "@ant-design/icons-vue";
+import { CodeOutlined, ThunderboltOutlined, FileTextOutlined, BugOutlined, ShareAltOutlined, FormatPainterOutlined, ToolOutlined, AppstoreAddOutlined, SwapOutlined, BuildOutlined } from "@ant-design/icons-vue";
 import { Html5Outlined } from "@ant-design/icons-vue";
 
 // todo 增加我的那个文件上传的应用.
@@ -94,8 +94,14 @@ export default {
           description: "基于WebRTC的局域网文件互传工具，并支持通过Cloudflare R2进行文件中转。",
           to: "https://f2ff.netlify.app/", // 使用完整的外部链接
           // https://26f5849c.file-transfer-3fc.pages.dev/
-          // https://file.24992345.xyz/ 
+          // https://file.24992345.xyz/
           icon: ShareAltOutlined,
+        },
+        {
+          title: "智能日志分析器",
+          description: "上传并分析日志文件，根据上下文规则智能过滤和高亮关键信息。",
+          to: "/tools/log-analyzer",
+          icon: FileTextOutlined,
         },
       ],
     };
