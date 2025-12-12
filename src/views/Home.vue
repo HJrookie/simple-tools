@@ -19,6 +19,7 @@ import ToolCard from "../components/ToolCard.vue";
 
 // 引入所有需要的图标
 import { CodeOutlined, ThunderboltOutlined, BugOutlined, FormatPainterOutlined, ToolOutlined, AppstoreAddOutlined, SwapOutlined, BuildOutlined } from "@ant-design/icons-vue";
+import { Html5Outlined } from "@ant-design/icons-vue";
 
 // todo 增加我的那个文件上传的应用.
 export default {
@@ -80,6 +81,12 @@ export default {
           description: "通过可视化面板快速生成精美的阴影、渐变和滤镜效果。",
           to: "/tools/css-generator",
           icon: FormatPainterOutlined,
+        },
+        {
+          title: "HTML 实时渲染器",
+          description: "粘贴 HTML 代码片段，即时查看渲染后的页面效果，支持内联样式和脚本。",
+          to: "/tools/html-renderer",
+          icon: Html5Outlined,
         },
       ],
     };

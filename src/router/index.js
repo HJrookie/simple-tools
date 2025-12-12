@@ -49,6 +49,11 @@ const routes = [
     name: "InteractiveCssGenerator",
     component: () => import("../views/tools/InteractiveCssGenerator.vue"),
   },
+  {
+    path: "/tools/html-renderer",
+    name: "HtmlRenderer",
+    component: () => import("../views/tools/HtmlRenderer.vue"),
+  },
 ];
 
 const router = createRouter({
