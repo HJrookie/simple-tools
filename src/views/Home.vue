@@ -103,6 +103,14 @@ export default {
           to: "/tools/log-analyzer",
           icon: FileTextOutlined,
         },
+        // {
+        //   title: "Gemini Universe",
+        //   description: "Gemini 生成的宇宙渲染图",
+        //   to: "https://starts-7e8.pages.dev/", // 使用完整的外部链接
+        //   // https://26f5849c.file-transfer-3fc.pages.dev/
+        //   // https://file.24992345.xyz/
+        //   icon: ShareAltOutlined,
+        // },
       ],
     };
   },
