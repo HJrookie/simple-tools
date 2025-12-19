@@ -59,6 +59,11 @@ const routes = [
     name: "LogAnalyzer",
     component: () => import("../views/tools/LogAnalyzer.vue"),
   },
+  {
+    path: "/tools/nginx-example",
+    name: "NginxExample",
+    component: () => import("../views/tools/NginxExample.vue"),
+  }
 ];
 
 const router = createRouter({

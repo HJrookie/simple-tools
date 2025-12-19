@@ -111,6 +111,12 @@ export default {
         //   // https://file.24992345.xyz/
         //   icon: ShareAltOutlined,
         // },
+        {
+          title: "Nginx 配置示例",
+          description: "查看常用 Nginx 配置场景和示例，快速上手。",
+          to: "/tools/nginx-example",
+          icon: CodeOutlined,
+        }
       ],
     };
   },
