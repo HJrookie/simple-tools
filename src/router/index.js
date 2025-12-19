@@ -63,7 +63,12 @@ const routes = [
     path: "/tools/nginx-example",
     name: "NginxExample",
     component: () => import("../views/tools/NginxExample.vue"),
-  }
+  },
+  {
+    path: "/tools/nginx-log-parser",
+    name: "NginxLogParser",
+    component: () => import("../views/tools/NginxLogParser.vue"),
+  },
 ];
 
 const router = createRouter({

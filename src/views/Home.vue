@@ -116,7 +116,13 @@ export default {
           description: "查看常用 Nginx 配置场景和示例，快速上手。",
           to: "/tools/nginx-example",
           icon: CodeOutlined,
-        }
+        },
+        {
+          title: "Nginx 日志解析器",
+          description: "上传 Nginx 日志文件，快速解析并可视化分析日志内容。",
+          to: "/tools/nginx-log-parser",
+          icon: CodeOutlined,
+        },
       ],
     };
   },
