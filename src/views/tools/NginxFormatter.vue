@@ -2,13 +2,14 @@
 <template>
   <div>
     <!-- <a-page-header title="Nginx 配置检查 & 格式化" @back="() => this.$router.push('/')" /> -->
-    <div>
-      <a-button @click="() => this.$router.push('/')" style="margin-left: 8px"> 返回</a-button>
-    </div>
 
     <a-row :gutter="16">
       <div class="button-container">
         <a-space>
+          <div>
+            <a-button @click="() => this.$router.push('/')" style="margin-left: 8px"> 返回</a-button>
+          </div>
+
           <a-button type="primary" :loading="isLoading" @click="checkSyntax">
             <template #icon><SearchOutlined /></template>
             检查语法
@@ -26,7 +27,7 @@
 
       <!-- 左侧：输入区域 -->
       <a-col :span="12">
-        <a-typography-title :level="4">Nginx 配置输入</a-typography-title>
+        <a-typography-title :level="5">Nginx 配置输入</a-typography-title>
         <a-textarea v-model:value="nginxConfig" placeholder="请在此处粘贴您的 Nginx 配置代码" :rows="25" class="config-textarea" />
         <!-- 操作按钮移到输入框下方 -->
       </a-col>
@@ -34,7 +35,7 @@
       <!-- 右侧：结果展示区域 -->
       <a-col :span="12">
         <div class="output-header">
-          <a-typography-title :level="4">格式化结果</a-typography-title>
+          <a-typography-title :level="5">格式化结果</a-typography-title>
           <a-space>
             <span>语法高亮</span>
             <a-switch v-model:checked="isHighlightingEnabled" />
@@ -207,7 +208,7 @@ export default {
       this._parseConfig(() => {
         this.validationStatus = "success";
         this.validationMessage = "恭喜！Nginx 配置语法正确无误。";
-        message.success("语法检查通过！");
+        message.success("语法检查通过！", 0.3);
       });
     },
 
@@ -218,16 +219,16 @@ export default {
         this.formattedConfig = this.reformatNginxComments(rawFormatted);
         this.validationStatus = "success";
         this.validationMessage = "配置已成功格式化！";
-        message.success("格式化成功！");
+        message.success("格式化成功！", 0.3);
       });
     },
     copyToClipboard() {
       if (!this.formattedConfig.trim()) {
-        message.warning("格式化结果为空！");
-        return;
+        message.warning("格式化结果为空！", 0.3);
+        return; 
       }
       navigator.clipboard.writeText(this.formattedConfig).then(() => {
-        message.success("格式化结果已复制到剪贴板！");
+        message.success("格式化结果已复制到剪贴板！", 0.3);
       });
     },
 
@@ -236,7 +237,7 @@ export default {
       this.formattedConfig = "格式化结果将显示在这里...";
       this.validationMessage = "";
       this.validationStatus = "";
-      message.info("内容已清空");
+      message.info("内容已清空！", 0.3);
     },
   },
 };
@@ -246,6 +247,7 @@ export default {
 .config-textarea {
   font-family: "Courier New", Courier, monospace;
   font-size: 14px;
+  height: calc(100vh - 100px); /* 与左侧输入框大致等高 */
 }
 
 .button-container {
@@ -253,7 +255,7 @@ export default {
   justify-content: center;
   align-items: center;
   width: 100%;
-  margin-top: 16px; /* 与上方输入框的间距 */
+  margin-top: 0px; /* 与上方输入框的间距 */
 }
 
 .output-header {
@@ -265,13 +267,13 @@ export default {
 
 /* Prism.js 容器统一样式 */
 .prism-container {
-  height: 524px; /* 与左侧输入框大致等高 */
+  height: calc(100vh - 100px); /* 与左侧输入框大致等高 */
   overflow: auto;
   border-radius: 6px;
   /* Okaidia 主题的背景色，保持一致性 */
   background-color: #272822;
   font-family: "Courier New", Courier, monospace;
-  font-size: 14px;
+  font-size: 12px;
   margin: 0; /* pre 标签默认有 margin，需要重置 */
   padding: 1em; /* 增加内边距，更美观 */
 }
