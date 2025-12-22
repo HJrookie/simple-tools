@@ -69,6 +69,16 @@ const routes = [
     name: "NginxLogParser",
     component: () => import("../views/tools/NginxLogParser.vue"),
   },
+  {
+    path: "/tools/letencrypt-certbot",
+    name: "LetEncryptCertbot",
+    component: () => import("../views/tools/LetEncryptCertbot.vue"),
+  },
+  {
+    path: "/tools/markdown-preview",
+    name: "MarkdownPreview",
+    component: () => import("../views/tools/MarkdownPreview.vue"),
+  },
 ];
 
 const router = createRouter({

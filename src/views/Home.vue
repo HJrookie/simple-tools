@@ -18,7 +18,19 @@ import { Row, Col, TypographyTitle, TypographyParagraph } from "ant-design-vue";
 import ToolCard from "../components/ToolCard.vue";
 
 // 引入所有需要的图标
-import { CodeOutlined, ThunderboltOutlined, FileTextOutlined, BugOutlined, ShareAltOutlined, FormatPainterOutlined, ToolOutlined, AppstoreAddOutlined, SwapOutlined, BuildOutlined } from "@ant-design/icons-vue";
+import {
+  CodeOutlined,
+  ThunderboltOutlined,
+  FileMarkdownOutlined,
+  FileTextOutlined,
+  BugOutlined,
+  ShareAltOutlined,
+  FormatPainterOutlined,
+  ToolOutlined,
+  AppstoreAddOutlined,
+  SwapOutlined,
+  BuildOutlined,
+} from "@ant-design/icons-vue";
 import { Html5Outlined } from "@ant-design/icons-vue";
 
 // todo 增加我的那个文件上传的应用.
@@ -35,11 +47,25 @@ export default {
     return {
       tools: [
         {
-          title: "字符串转JSON",
+          title: "xft字符串转JSON",
           description: "将 key=value 格式的字符串快速转换为标准 JSON 对象。",
           to: "/tools/string-to-json",
           icon: CodeOutlined,
         },
+        {
+          title: "xft智能日志分析器",
+          description: "上传并分析日志文件，根据上下文规则智能过滤和高亮关键信息。",
+          to: "/tools/log-analyzer",
+          icon: FileTextOutlined,
+        },
+
+        {
+          title: "React/Next.js 渲染器",
+          description: "实时预览 AI 生成的 React/JSX 代码片段，即时查看 UI 效果。",
+          to: "/tools/react-renderer",
+          icon: ThunderboltOutlined,
+        },
+
         {
           title: "Nginx 配置检查 & 格式化",
           description: "在线检查并美化 Nginx 配置文件，发现潜在的语法错误。",
@@ -47,10 +73,16 @@ export default {
           icon: BuildOutlined,
         },
         {
-          title: "React/Next.js 渲染器",
-          description: "实时预览 AI 生成的 React/JSX 代码片段，即时查看 UI 效果。",
-          to: "/tools/react-renderer",
-          icon: ThunderboltOutlined,
+          title: "Nginx 配置示例",
+          description: "查看常用 Nginx 配置场景和示例，快速上手。",
+          to: "/tools/nginx-example",
+          icon: CodeOutlined,
+        },
+        {
+          title: "Nginx 日志解析器",
+          description: "上传 Nginx 日志文件，快速解析并可视化分析日志内容。",
+          to: "/tools/nginx-log-parser",
+          icon: CodeOutlined,
         },
         {
           title: "JSON 转类型定义",
@@ -97,12 +129,7 @@ export default {
           // https://file.24992345.xyz/
           icon: ShareAltOutlined,
         },
-        {
-          title: "智能日志分析器",
-          description: "上传并分析日志文件，根据上下文规则智能过滤和高亮关键信息。",
-          to: "/tools/log-analyzer",
-          icon: FileTextOutlined,
-        },
+
         // {
         //   title: "Gemini Universe",
         //   description: "Gemini 生成的宇宙渲染图",
@@ -111,17 +138,18 @@ export default {
         //   // https://file.24992345.xyz/
         //   icon: ShareAltOutlined,
         // },
+
         {
-          title: "Nginx 配置示例",
-          description: "查看常用 Nginx 配置场景和示例，快速上手。",
-          to: "/tools/nginx-example",
+          title: "Let's Encrypt 证书申请工具",
+          description: "使用 Certbot 申请和管理 Let's Encrypt 证书，支持自动续签。",
+          to: "/tools/letencrypt-certbot",
           icon: CodeOutlined,
         },
         {
-          title: "Nginx 日志解析器",
-          description: "上传 Nginx 日志文件，快速解析并可视化分析日志内容。",
-          to: "/tools/nginx-log-parser",
-          icon: CodeOutlined,
+          title: "Markdown 预览 & 导出",
+          description: "优雅的 Markdown 实时预览工具，支持一键导出为高清 PDF 文档。",
+          to: "/tools/markdown-preview",
+          icon: FileMarkdownOutlined,
         },
       ],
     };
@@ -133,7 +161,7 @@ export default {
 .home-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 20px 24px;
 }
 
 .header {
