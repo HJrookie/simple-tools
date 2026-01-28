@@ -79,6 +79,11 @@ const routes = [
     name: "MarkdownPreview",
     component: () => import("../views/tools/MarkdownPreview.vue"),
   },
+  {
+    path: "/tools/image-compress",
+    name: "ImageCompress",
+    component: () => import("../views/tools/ImageCompress.vue"),
+  },
 ];
 
 const router = createRouter({

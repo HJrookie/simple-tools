@@ -30,6 +30,7 @@ import {
   AppstoreAddOutlined,
   SwapOutlined,
   BuildOutlined,
+  CompressOutlined,
 } from "@ant-design/icons-vue";
 import { Html5Outlined } from "@ant-design/icons-vue";
 
@@ -150,6 +151,12 @@ export default {
           description: "优雅的 Markdown 实时预览工具，支持一键导出为高清 PDF 文档。",
           to: "/tools/markdown-preview",
           icon: FileMarkdownOutlined,
+        },
+        {
+          title: "图片压缩工具",
+          description: "上传图片，压缩后下载，支持批量处理。",
+          to: "/tools/image-compress",
+          icon: CompressOutlined,
         },
       ],
     };
