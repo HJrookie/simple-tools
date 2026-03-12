@@ -25,7 +25,7 @@ import {
   FileTextOutlined,
   BugOutlined,
   ShareAltOutlined,
-  FormatPainterOutlined,
+  FormatPainterOutlined,HeartOutlined,
   ToolOutlined,
   AppstoreAddOutlined,
   SwapOutlined,
@@ -157,6 +157,12 @@ export default {
           description: "上传图片，压缩后下载，支持批量处理。",
           to: "/tools/image-compress",
           icon: CompressOutlined,
+        },
+        {
+          title: "TL",
+          description: "TL",
+          to: "/tools/taluo",
+          icon: HeartOutlined,
         },
       ],
     };

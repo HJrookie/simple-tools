@@ -84,6 +84,11 @@ const routes = [
     name: "ImageCompress",
     component: () => import("../views/tools/ImageCompress.vue"),
   },
+  {
+    path: "/tools/taluo",
+    name: "Taluo",
+    component: () => import("../views/tools/taluo/index.vue"),
+  }
 ];
 
 const router = createRouter({
