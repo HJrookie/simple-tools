@@ -1,33 +1,42 @@
 <template>
   <div class="tarot-container">
     <div class="header">
-      <h5>🔮 塔罗在线占卜</h5>
+      <h5>✨ 塔罗在线占卜</h5>
       <div class="controls">
-        <a-radio-group v-model:value="mode" button-style="solid" @change="resetAll">
+        <a-radio-group v-model:value="mode" button-style="solid" @change="resetAll" class="custom-radio">
           <a-radio-button value="three">三张牌阵</a-radio-button>
           <a-radio-button value="single">单张启示</a-radio-button>
         </a-radio-group>
-        <a-button type="primary" ghost @click="initDeck" :loading="isShuffling"> 重新洗牌 </a-button>
+        <a-button type="primary" class="btn-warm" @click="initDeck" :loading="isShuffling"> 重新洗牌 </a-button>
       </div>
     </div>
 
     <!-- 阶段一：选择 -->
     <div v-if="!showResult" class="draw-area">
       <div class="status-bar">
-        已选择: <span class="count">{{ selectedIndices.length }} / {{ mode === "single" ? 1 : 3 }}</span>
+        <span>请凭直觉抽取</span>
+        <div class="count-badge">已选: {{ selectedIndices.length }} / {{ mode === "single" ? 1 : 3 }}</div>
       </div>
 
       <div class="deck-container">
-        <!-- 魔法阵背景 -->
-        <div class="magic-circle" :class="{ 'active': isShuffling }"></div>
-        <!-- 牌堆：增加洗牌时的动画 class -->
+        <!-- 温暖的光晕背景 -->
+        <div class="warm-glow" :class="{ 'active': isShuffling }"></div>
+
         <div class="deck-grid" :class="{ 'is-shuffling': isShuffling }">
-          <TarotCard v-for="(card, index) in shuffledCards" :key="card.tempId" size="small" :card="card" :is-selected="selectedIndices.includes(index)" @click="toggleSelect(index)" />
+          <TarotCard
+            v-for="(card, index) in shuffledCards"
+            :key="card.tempId"
+            size="small"
+            :card="card"
+            :is-selected="selectedIndices.includes(index)"
+            :style="{ '--delay': `${index * 15}ms` }"
+            @click="toggleSelect(index)"
+          />
         </div>
       </div>
 
       <div class="footer-bar">
-        <a-button type="primary" size="" :disabled="!canReveal" @click="revealResults" class="reveal-btn"> 查看结果 </a-button>
+        <a-button size="large" :disabled="!canReveal" @click="revealResults" class="reveal-btn btn-warm" :class="{ 'btn-ready': canReveal }"> ✨ 揭晓启示 ✨ </a-button>
       </div>
     </div>
 
@@ -36,12 +45,12 @@
       <transition-group name="fade-up" tag="div" class="result-display">
         <div v-for="(card, idx) in resultCards" :key="idx" class="result-item">
           <div class="time-tag" v-if="mode === 'three'">{{ timeLabels[idx] }}</div>
-          <!-- 传值给子组件 -->
           <TarotCard :card="card" size="large" :is-flipped="true" :is-reversed="card.isReversed" />
         </div>
       </transition-group>
+
       <div class="back-action">
-        <a-button @click="resetAll" size="">重选模式/洗牌</a-button>
+        <a-button @click="resetAll" size="large" class="btn-warm ghost">感谢指引 / 再次占卜</a-button>
       </div>
     </div>
   </div>
@@ -59,7 +68,7 @@ export default {
       shuffledCards: [],
       selectedIndices: [],
       showResult: false,
-      isShuffling: false, // 洗牌动画状态
+      isShuffling: false,
       timeLabels: ["过去", "现在", "未来"],
       allData: tarotCards,
     };
@@ -84,31 +93,23 @@ export default {
       this.selectedIndices = [];
       this.showResult = false;
 
-      // 1. 开始洗牌：牌组乱序
-      // 乱序算法保持不变...
+      // 洗牌算法
       let deck = [...this.allData];
       for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [deck[i], deck[j]] = [deck[j], deck[i]];
       }
 
-      // 2. 为每张牌赋予随机属性（用于动画）
       this.shuffledCards = deck.map((c) => ({
         ...c,
         tempId: Math.random(),
         isReversed: Math.random() > 0.5,
-        // 随机旋转角度
-        randomRotate: (Math.random() * 10 - 5).toFixed(2),
-        // 洗牌时的随机偏移量（用于散射效果）
-        tx: Math.random() * 200 - 100,
-        ty: Math.random() * 200 - 100,
       }));
 
-      // 3. 模拟动画流程：汇聚 -> 混沌 -> 散开
-      // 动画时间延长到 1.5s 更有仪式感
+      // 动画时间调整为 1.8s，让展开更丝滑
       setTimeout(() => {
         this.isShuffling = false;
-      }, 1600);
+      }, 1800);
     },
 
     toggleSelect(index) {
@@ -136,207 +137,231 @@ export default {
 </script>
 
 <style scoped>
-/* 修改 tarot-container 的背景 */
+/* 护眼温馨背景 */
 .tarot-container {
-  background-color: #0f1215;
-  /* 深色背景 */
-  /* 或者使用带一点点纹理的深色 */
-  background-image: radial-gradient(circle at center, #1a1e23 0%, #0a0a0c 100%);
-  overflow: auto;
+  background-color: #fcf9f2;
+  background-image: radial-gradient(circle at top, #fffdf8 0%, #f4eee1 100%);
+  color: #5c4b41; /* 暖棕色文字 */
+  overflow-x: hidden;
+  overflow-y: auto;
   height: calc(100vh - 40px);
+  padding-bottom: 80px;
+  font-family: "Georgia", "Times New Roman", serif;
 }
-.header h1 {
-  color: #d4af37;
+
+.header {
+  padding: 20px 10px;
   text-align: center;
 }
+
+.header h5 {
+  color: #b58d56;
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  text-shadow: 0 2px 4px rgba(181, 141, 86, 0.2);
+}
+
 .controls {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  margin: 20px 0;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+/* 按钮样式客制化 */
+.btn-warm {
+  background: #d4a373;
+  border-color: #d4a373;
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(212, 163, 115, 0.3);
+  transition: all 0.3s;
+}
+.btn-warm:hover,
+.btn-ready {
+  background: #c58e58 !important;
+  border-color: #c58e58 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(197, 142, 88, 0.4);
+}
+.btn-warm.ghost {
+  background: transparent;
+  color: #d4a373;
+  border: 1px solid #d4a373;
 }
 
 .status-bar {
-  text-align: center;
-  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 15px;
   font-size: 16px;
+  color: #8c7b70;
 }
-.count {
-  color: #722ed1;
+.count-badge {
+  background: #e9dec9;
+  padding: 4px 16px;
+  border-radius: 20px;
+  color: #c58e58;
   font-weight: bold;
-  font-size: 20px;
+  margin-top: 8px;
+  font-size: 14px;
 }
 
-/* 牌堆网格：缩小后的排布 */
-.deck-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-  gap: 12px;
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 20px;
-  transition: all 0.5s ease;
-}
-
-.deck-grid:hover .tarot-card-wrapper:not(:hover) {
-  opacity: 0.6;
-  filter: grayscale(0.3);
-  transition: all 0.3s ease;
-}
-
-.tarot-card-wrapper:hover {
-  opacity: 1 !important;
-  filter: brightness(1.2) !important;
-  z-index: 100;
-}
-
-/* 洗牌动画 */
-.is-shuffling {
-  transform: scale(0.8);
-  filter: blur(2px);
-  pointer-events: none;
-}
-.is-shuffling .tarot-card-wrapper {
-  /* 让所有牌向中心随机偏移并抖动 */
-  transform: translate(calc(var(--x, 0px)), calc(var(--y, 0px))) rotate(calc(var(--r, 0deg)));
-  animation: shake 0.5s infinite;
-}
-
-@keyframes shake {
-  0% {
-    transform: translate(0, 0);
-  }
-  25% {
-    transform: translate(5px, -5px) rotate(5deg);
-  }
-  50% {
-    transform: translate(-5px, 5px) rotate(-5deg);
-  }
-  100% {
-    transform: translate(0, 0);
-  }
-}
-
-.footer-bar {
-  /* position: fixed; */
-  bottom: 40px;
-  left: 0;
-  right: 0;
-  padding: 20px;
-  color: white;
-  /* background: rgba(0, 0, 0, 0.8); */
-  display: flex;
-  justify-content: center;
-  z-index: 100;
-}
-.reveal-btn {
-  color: #d4af37;
-}
-
-/* 结果页 */
-.result-display {
-  display: flex;
-  justify-content: center;
-  gap: 30px;
-  flex-wrap: wrap;
-  margin-top: 50px;
-}
-.time-tag {
-  background: gold;
-  color: #2a1919;
-  padding: 2px 15px;
-  text-align: center;
-  border-radius: 10px;
-  margin-bottom: 10px;
-  font-weight: bold;
-}
-.back-action {
-  text-align: center;
-  margin-top: 50px;
-}
-
-/* 进场动画 */
-.fade-up-enter-active {
-  transition: all 0.6s ease;
-}
-.fade-up-enter-from {
-  opacity: 0;
-  transform: translateY(30px);
-}
-
-/* 容器 */
+/* 容器与暖色光晕 */
 .deck-container {
   position: relative;
-  min-height: 500px;
+  min-height: 40vh;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-/* 魔法阵效果 */
-.magic-circle {
+.warm-glow {
   position: absolute;
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, rgba(114, 46, 209, 0.4) 0%, transparent 70%);
-  border: 2px solid rgba(212, 175, 55, 0.2);
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(212, 163, 115, 0.2) 0%, transparent 70%);
   border-radius: 50%;
-  opacity: 0;
-  transform: scale(0.5) rotate(0deg);
-  transition: all 0.8s ease;
+  opacity: 1;
+  transition: all 1.5s ease;
   pointer-events: none;
 }
-.magic-circle.active {
-  opacity: 1;
-  transform: scale(1.5) rotate(360deg);
-  border: 2px dashed rgba(212, 175, 55, 0.5);
-  box-shadow: 0 0 50px rgba(114, 46, 209, 0.5);
+.warm-glow.active {
+  transform: scale(2);
+  opacity: 0.5;
+  background: radial-gradient(circle, rgba(212, 163, 115, 0.4) 0%, transparent 70%);
 }
 
-/* 牌堆网格 */
+/* 移动端友好的牌堆网格 */
 .deck-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-  gap: 15px;
-  max-width: 1000px;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  gap: 12px;
+  max-width: 900px;
+  width: 95%;
+  margin: 0 auto;
+  padding: 10px;
+  transition: all 0.5s ease;
+  perspective: 1000px; /* 增加3D透视 */
 }
 
-/* 洗牌中的核心动画 */
+/* 悬停非焦点牌变淡（护眼版） */
+.deck-grid:hover .tarot-card-wrapper:not(:hover) {
+  opacity: 0.7;
+  filter: sepia(0.3);
+}
+
+/* ==================== 
+   全新的洗牌动画：波浪展开
+   ==================== */
 .is-shuffling .tarot-card-wrapper {
-  /* 让所有牌飞向中心点 */
-  position: relative;
-  /* 计算每张牌飞往中心所需的抵消值，这里简单处理为向中心聚拢 */
-  animation: vortex 1.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
-  /* 利用变量实现交错飞入 */
-  animation-delay: calc(var(--index) * 2ms);
-  z-index: 100;
+  animation: warmShuffle 1.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+  /* 使用模板中传进来的变量设置延迟，产生洗牌的瀑布流/波浪效果 */
+  animation-delay: var(--delay);
+  opacity: 0;
 }
 
-@keyframes vortex {
+@keyframes warmShuffle {
   0% {
-    transform: rotate(0deg);
+    transform: translateY(100px) rotateY(90deg) scale(0.6);
+    opacity: 0;
   }
-  30% {
-    /* 汇聚阶段：所有牌向中心聚拢并缩小 */
-    transform: translate(calc(500px - 50vw), /* 动态计算中心点需配合JS，这里演示效果使用大致偏移 */ calc(300px - 50vh)) rotate(720deg) scale(0.2);
-    opacity: 0.8;
-  }
-  60% {
-    /* 混沌阶段：高频震动 */
-    transform: translate(calc(500px - 50vw + 5px), calc(300px - 50vh + 5px)) rotate(1080deg) scale(0.3);
-    filter: brightness(2) blur(1px);
+  50% {
+    transform: translateY(-20px) rotateY(0deg) scale(1.05);
+    opacity: 1;
   }
   100% {
-    /* 散开阶段：回到原位 */
-    transform: translate(0, 0) rotate(0deg) scale(1);
+    transform: translateY(0) rotateY(0deg) scale(1);
     opacity: 1;
   }
 }
 
-/* 鼠标悬停时的发光效果 */
-.tarot-card-wrapper:hover {
-  filter: brightness(1.3) drop-shadow(0 0 10px rgba(212, 175, 55, 0.8));
-  transition: all 0.3s ease;
+/* 底部按钮栏 - 移动端悬浮 */
+.footer-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 15px;
+  background: linear-gradient(to top, #f4eee1 80%, transparent);
+  display: flex;
+  justify-content: center;
+  z-index: 100;
+}
+
+/* 结果页布局 */
+.result-display {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap; /* 关键：允许在手机上换行 */
+  margin-top: 30px;
+  padding: 0 15px;
+}
+.result-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%; /* 移动端默认宽度 */
+  max-width: 240px; /* 限制最大宽度 */
+}
+.time-tag {
+  background: #e3cca4;
+  color: #7b5e43;
+  padding: 4px 20px;
+  border-radius: 15px;
+  margin-bottom: 15px;
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.back-action {
+  text-align: center;
+  margin-top: 40px;
+  padding-bottom: 30px;
+}
+
+/* 进场动画 */
+.fade-up-enter-active {
+  transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.fade-up-enter-from {
+  opacity: 0;
+  transform: translateY(40px) scale(0.9);
+}
+
+/* ==================== 
+   移动端 (手机) 适配
+   ==================== */
+@media (max-width: 768px) {
+  .deck-grid {
+    grid-template-columns: repeat(auto-fill, minmax(35px, 1fr)); /* 缩小牌宽 */
+    gap: 8px; /* 缩小间距，避免屏幕拉太长 */
+  }
+
+  .result-display {
+    gap: 15px;
+  }
+
+  .result-item {
+    max-width: 160px; /* 手机上缩小翻开的牌，让3张牌可以2排显示或缩小并排 */
+    width: calc(50% - 10px); /* 手机端每行排两张 */
+  }
+  /* 第一张占满全宽（过去），下面两张并排（现在、未来），或者直接平铺 */
+  .result-item:first-child:nth-last-child(3) {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .header h5 {
+    font-size: 20px;
+  }
+
+  .tarot-container {
+    padding-bottom: 100px;
+  }
 }
 </style>

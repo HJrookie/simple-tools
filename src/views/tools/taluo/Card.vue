@@ -1,33 +1,40 @@
 <template>
   <div class="tarot-card-wrapper" :class="[{ 'is-selected': isSelected, 'is-flipped': isFlipped }, size === 'small' ? 'size-small' : 'size-large']">
-    <!-- 正面 -->
+    <!-- 正面 (结果面) -->
     <div v-if="isFlipped" class="card-face face-front">
-      <a-card hoverable>
+      <a-card hoverable class="warm-card">
         <template #cover>
-          <!-- 关键：增加 class 处理旋转 -->
-          <img :src="card.image" :alt="card.name" class="card-img" :class="{ 'reversed-img': isReversed }" />
+          <div class="img-wrapper">
+            <img :src="card.image" :alt="card.name" class="card-img" :class="{ 'reversed-img': isReversed }" />
+          </div>
         </template>
 
         <a-card-meta v-if="size === 'large'">
           <template #title>
-            <!-- 显示正逆位状态 -->
-            <span :class="isReversed ? 'status-rev' : 'status-up'">
-              {{ isReversed ? "[逆位] " : "[正位] " }}
-            </span>
-            {{ card.name }}
+            <div class="card-title">
+              <span :class="isReversed ? 'status-rev' : 'status-up'">
+                {{ isReversed ? "逆" : "正" }}
+              </span>
+              {{ card.name }}
+            </div>
           </template>
           <template #description>
-            <!-- 实际开发中，逆位通常有不同的解释，这里简单处理 -->
-            <div class="meaning-text">{{ isReversed ? "【逆位含义】" : "【正位含义】" }}
-                {{ isReversed ? card.revMeaning : card.meaning }}</div>
+            <div class="meaning-text">
+              <div class="meaning-label">{{ isReversed ? "【逆位含义】" : "【正位含义】" }}</div>
+              {{ isReversed ? card.revMeaning : card.meaning }}
+            </div>
           </template>
         </a-card-meta>
         <div v-else class="small-name">{{ card.name }}</div>
       </a-card>
     </div>
 
-    <!-- 背面逻辑保持不变 -->
-    <div v-else class="card-face face-back"></div>
+    <!-- 背面 (抽牌面) 更改为温暖色调 -->
+    <div v-else class="card-face face-back">
+      <div class="back-pattern">
+        <span class="center-icon">✦</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -37,7 +44,7 @@ export default {
     card: Object,
     isFlipped: Boolean,
     isSelected: Boolean,
-    isReversed: Boolean, // 接收正逆位状态
+    isReversed: Boolean,
     size: { type: String, default: "small" },
   },
 };
@@ -46,119 +53,157 @@ export default {
 <style scoped>
 .tarot-card-wrapper {
   position: relative;
-  /* transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); */
   transition:
-    transform 0.6s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
     box-shadow 0.3s;
-
   cursor: pointer;
   user-select: none;
   will-change: transform;
 }
 
-/* 尺寸控制 */
+/* 移动端适配后的尺寸控制 */
 .size-small {
-  width: 50px;
-  height: 70px;
+  width: 100%;
+  aspect-ratio: 1 / 1.5; /* 保证比例而不是死抠像素高度 */
 }
 .size-large {
-  width: 240px;
-  /* height: 300px; */
+  width: 100%; /* 由父容器控制具体宽度 */
 }
 
+/* 翻转 */
 .reversed-img {
   transform: rotate(180deg);
 }
 
-.status-up {
-  color: #52c41a; /* 绿色代表正位 */
-  font-size: 14px;
-}
-
-.status-rev {
-  color: #f5222d; /* 红色代表逆位 */
-  font-size: 14px;
-}
-
+/* 卡片选中效果 (温柔上浮) */
 .is-selected {
-  transform: translateY(-20px) scale(1.1);
-  filter: drop-shadow(0 0 15px #722ed1);
+  transform: translateY(-15px);
+  filter: drop-shadow(0 10px 15px rgba(212, 163, 115, 0.6));
   z-index: 10;
 }
 
+.tarot-card-wrapper:hover:not(.is-selected):not(.is-flipped) {
+  transform: translateY(-5px);
+  filter: brightness(1.05);
+}
+
+/* 面板通用 */
 .card-face {
   width: 100%;
   height: 100%;
   border-radius: 8px;
-  padding: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 10px rgba(139, 115, 85, 0.15);
 }
 
-/* 渐变背面 */
+/* ==================== 
+   卡牌背面 - 温馨护眼版
+   ==================== */
 .face-back {
-  /* 深宝石绿到黑森林色 */
-  /* 减小渐变的跳跃度，使用更暗的绿色 */
-  background: linear-gradient(135deg, #042a2b 0%, #001a1a 100%);
-  border: 1.5px solid rgba(212, 175, 55, 0.6); /* 边框变细且带透明度 */
+  /* 暖陶土/玫瑰金 渐变 */
+  background: linear-gradient(135deg, #e3cda4 0%, #c58e58 100%);
+  border: 2px solid rgba(255, 255, 255, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 4px;
 }
 
-/* 增加一个“噪点”纹理层，让渐变更有纸质质感 */
-/* .face-back::after {
-  content: '';
-  position: absolute;
-  top: -50%; left: -50%;
-  width: 200%; height: 200%;
-  background: linear-gradient(45deg, transparent 45%, rgba(212, 175, 55, 0.1) 50%, transparent 55%);
-  animation: shine 3s infinite;
-} */
-@keyframes shine {
-  0% {
-    transform: translateX(-100%) translateY(-100%);
-  }
-  100% {
-    transform: translateX(100%) translateY(100%);
-  }
-}
-/* 优化中间的✨图标 */
-.center-icon {
-  font-size: 28px;
-  color: #d4af37;
-  text-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
-  filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
-}
-
+/* 内部纹理框 */
 .back-pattern {
-  width: 85%;
-  height: 90%;
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255, 255, 255, 0.05) 5px, rgba(255, 255, 255, 0.05) 10px);
 }
 
 .center-icon {
-  font-size: 24px;
-  filter: drop-shadow(0 0 5px gold);
+  font-size: 20px;
+  color: #fff9f0;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+}
+
+/* ==================== 
+   卡牌正面 (结果展示)
+   ==================== */
+.warm-card {
+  border: none !important;
+  background-color: #fffdf9;
+}
+
+.img-wrapper {
+  padding: 10px 10px 0 10px;
+  background: #fffdf9;
 }
 
 .card-img {
   width: 100%;
-  aspect-ratio: 2/3; /* 保持统一比例 */
+  aspect-ratio: 2/3;
   object-fit: cover;
+  border-radius: 4px;
   transition: transform 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
+
+/* 文字排版 */
+.card-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #5c4b41;
+  font-weight: bold;
+}
+
+.status-up,
+.status-rev {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+  color: white;
+}
+.status-up {
+  background-color: #9cb380;
+} /* 柔和的鼠尾草绿 */
+.status-rev {
+  background-color: #d88c8c;
+} /* 柔和的豆沙红 */
+
+.meaning-text {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #7b6d63;
+  text-align: justify;
+}
+.meaning-label {
+  font-weight: bold;
+  color: #b58d56;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
 .small-name {
   text-align: center;
   font-weight: bold;
   padding: 4px;
   font-size: 12px;
 }
-.meaning-text {
-  font-size: 12px;
-  line-height: 1.2;
+
+/* 针对手机端进一步微调卡片内容 */
+@media (max-width: 768px) {
+  .meaning-text {
+    font-size: 12px;
+  }
+  .card-title {
+    font-size: 14px;
+  }
+  ::v-deep .ant-card-body {
+    padding: 12px 8px; /* 减小默认padding */
+  }
 }
 </style>

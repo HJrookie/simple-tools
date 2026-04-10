@@ -158,12 +158,12 @@ export default {
           to: "/tools/image-compress",
           icon: CompressOutlined,
         },
-        {
-          title: "TL",
-          description: "TL",
-          to: "/tools/taluo",
-          icon: HeartOutlined,
-        },
+        // {
+        //   title: "TL",
+        //   description: "TL",
+        //   to: "/tools/taluo",
+        //   icon: HeartOutlined,
+        // },
       ],
     };
   },
