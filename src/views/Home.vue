@@ -2,7 +2,7 @@
 <template>
   <div class="home-container">
     <div class="header">
-      <a-typography-title>便捷小工具集</a-typography-title>
+      <!-- <a-typography-title level="4">便捷小工具集</a-typography-title> -->
       <a-typography-paragraph class="subtitle"> 一套精选的小工具，旨在提升你的日常开发效率和乐趣。 </a-typography-paragraph>
     </div>
     <a-row :gutter="[24, 24]">
@@ -25,7 +25,8 @@ import {
   FileTextOutlined,
   BugOutlined,
   ShareAltOutlined,
-  FormatPainterOutlined,HeartOutlined,
+  FormatPainterOutlined,
+  HeartOutlined,
   ToolOutlined,
   AppstoreAddOutlined,
   SwapOutlined,
@@ -130,7 +131,18 @@ export default {
           // https://file.24992345.xyz/
           icon: ShareAltOutlined,
         },
-
+        {
+          title: "文本对比工具",
+          description: "直接在浏览器本地对比两个文本文件，高亮显示差异。",
+          to: "https://text-compare.com/", // 使用完整的外部链接
+          icon: ToolOutlined,
+        },
+        {
+          title: "base64 编码/解码工具",
+          description: "在线编码和解码 base64 数据，支持批量处理。",
+          to: "https://base64.us/", // 使用完整的外部链接
+          icon: ToolOutlined,
+        },
         // {
         //   title: "Gemini Universe",
         //   description: "Gemini 生成的宇宙渲染图",
@@ -154,7 +166,7 @@ export default {
         },
         {
           title: "图片压缩工具",
-          description: "上传图片，压缩后下载，支持批量处理。",
+          description: "可以支持上传图片，压缩后下载，支持批量处理。",
           to: "/tools/image-compress",
           icon: CompressOutlined,
         },
@@ -174,12 +186,13 @@ export default {
 .home-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px 24px;
+  padding: 0px 24px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .header {
   text-align: center;
-  margin-bottom: 48px;
+  margin-bottom: 12px;
 }
 
 .subtitle {
