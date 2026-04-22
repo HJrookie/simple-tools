@@ -4,7 +4,7 @@
     <a-page-header class="no-print" title="Markdown 实时预览 & PDF 导出" @back="() => this.$router.push('/')" style="padding: 0px 10px">
       <template #extra>
         <a-space>
-          <!-- 新增分享按钮 -->
+          <!-- 分享按钮 -->
           <a-button @click="shareDocument" :loading="isSharing">
             <template #icon><ShareAltOutlined /></template>
             分享
@@ -40,7 +40,8 @@
       <!-- 右侧：预览区域 -->
       <div class="preview-pane">
         <div class="pane-header no-print">实时预览</div>
-        <div id="pdf-content" class="preview-content markdown-body" :style="previewStyle" v-html="htmlContent" ref="previewRef"></div>
+        <!-- 增加 @click 事件监听，用于事件委托捕获复制按钮点击 -->
+        <div id="pdf-content" class="preview-content markdown-body" :style="previewStyle" v-html="htmlContent" ref="previewRef" @click="handlePreviewClick"></div>
       </div>
     </div>
 
@@ -90,6 +91,7 @@ import "katex/dist/katex.min.css";
 import markedKatex from "marked-katex-extension";
 import Prism from "prismjs";
 import "prismjs/themes/prism-okaidia.css";
+import "prismjs/components/prism-json"; // 额外的高亮支持 json
 import "prismjs/components/prism-java";
 import "prismjs/components/prism-python";
 import "prismjs/components/prism-bash";
@@ -98,14 +100,27 @@ import "prismjs/components/prism-typescript";
 import "prismjs/components/prism-go";
 import "prismjs/components/prism-sql";
 import html2pdf from "html2pdf.js";
-import axios from "axios"; // 引入 axios
+import axios from "axios";
 
 marked.use(markedKatex({ throwOnError: false, output: "html" }));
 const renderer = new marked.Renderer();
+
+// 自定义代码渲染逻辑：包裹一个带有复制按钮和语言标识的头部
 renderer.code = ({ text, lang }) => {
   const language = Prism.languages[lang] || Prism.languages.plaintext;
   const highlighted = Prism.highlight(text, language, lang || "plaintext");
-  return `<pre class="language-${lang || "plaintext"}"><code class="language-${lang || "plaintext"}">${highlighted}</code></pre>`;
+  const langText = lang ? lang.toLowerCase() : "text";
+
+  // 复制按钮使用的 SVG 图标
+  const copySvg = `<svg viewBox="0 0 1024 1024" width="14" height="14" fill="currentColor" style="vertical-align: middle; margin-right: 4px;"><path d="M832 64H296c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h496v688c0 4.4 3.6 8 8 8h56c4.4 0 8-3.6 8-8V96c0-17.7-14.3-32-32-32z"></path><path d="M704 192H192c-17.7 0-32 14.3-32 32v530.7c0 8.5 3.4 16.6 9.4 22.6l173.3 173.3c6 6 14.1 9.4 22.6 9.4H704c17.7 0 32-14.3 32-32V224c0-17.7-14.3-32-32-32zM352 811.3V736c0-4.4-3.6-8-8-8h-75.3l83.3 83.3zM664 888H416V712c0-17.7-14.3-32-32-32H232V264h432v624z"></path></svg>`;
+
+  return `<div class="code-block-container">
+    <div class="code-header no-print">
+      <span class="lang-label">${langText}</span>
+      <button class="copy-btn">${copySvg}<span class="copy-text">复制</span></button>
+    </div>
+    <pre class="language-${lang || "plaintext"}"><code class="language-${lang || "plaintext"}">${highlighted}</code></pre>
+  </div>`;
 };
 marked.use({ renderer });
 
@@ -138,7 +153,7 @@ export default {
       isExporting: false,
       isSharing: false,
       showSettings: false,
-      apiBase: "https://notes.24992345.xyz/api", // 使用你的域名
+      apiBase: "https://notes.24992345.xyz/api",
       config: {
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
         backgroundColor: "#ffffff",
@@ -164,15 +179,13 @@ export default {
   },
   mounted() {
     this.loadConfig();
-    this.initContent(); // 初始加载逻辑
+    this.initContent();
   },
   methods: {
-    // 获取鉴权 Header 的通用方法
     getAuthHeader(pass) {
       const token = pass || sessionStorage.getItem("notes_session_key");
       return token ? { "x-notes-auth": encodeURIComponent(token) } : {};
     },
-    // 逻辑：优先检查 URL 是否带分享 ID，否则加载默认模板
     async initContent() {
       const urlParams = new URLSearchParams(window.location.search);
       const shareId = urlParams.get("s");
@@ -180,7 +193,6 @@ export default {
       if (shareId) {
         const hide = message.loading("正在获取分享内容...", 0);
         try {
-          // 注意：这里是不带 Header 的公共请求
           const res = await axios.get(`${this.apiBase}/share/${shareId}`);
           const data = res.data;
           this.markdownContent = data.content;
@@ -196,41 +208,45 @@ export default {
       } else {
         this.markdownContent = `# 全能 Markdown 编辑器
 
-支持 **LaTeX 公式** 与 **多语言代码高亮**。
+支持 **LaTeX 公式** 与 **多语言代码一键复制**。
 
-## 1. 数学公式 (LaTeX)
+## 1. 代码一键复制测试
+
+**JSON:**
+\`\`\`json
+{
+  "name": "simple-tools",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite"
+  }
+}
+\`\`\`
+
+**Shell:**
+\`\`\`bash
+npm install ant-design-vue@next
+npm run dev
+\`\`\`
+
+## 2. 数学公式 (LaTeX)
 
 行内公式： $E = mc^2$
 
 块级公式：
-
 $$
 \\frac{1}{\\sigma\\sqrt{2\\pi}} \\exp\\left( -\\frac{(x-\\mu)^2}{2\\sigma^2} \\right)
 $$
-
-## 2. 代码高亮
-
-**Java:**
-\`\`\`java
-public class HelloWorld {
-    public static void main(String[] args) {
-        System.out.println("Hello, LaTeX!");
-    }
-}
-\`\`\`
-
-> 提示：现在的导出功能更加强大，生成的 PDF 布局完美，图片也能正常显示。
 `;
         this.renderHtml();
       }
     },
 
     async shareDocument() {
-      // 1. 检查是否有密码（复用 Notes 的会话）
       let savedPass = sessionStorage.getItem("notes_session_key");
 
       if (!savedPass) {
-        // 如果没有，弹窗询问
         const pass = prompt("此操作需要输入访问密码：");
         if (!pass) return;
         savedPass = pass;
@@ -243,12 +259,10 @@ public class HelloWorld {
           config: this.config,
         };
 
-        // 2. 发起带鉴权的 POST 请求
         const res = await axios.post(`${this.apiBase}/share`, JSON.stringify(shareData), {
           headers: { "x-notes-auth": encodeURIComponent(savedPass) },
         });
 
-        // 3. 记住密码，下次分享就不问了
         sessionStorage.setItem("notes_session_key", savedPass);
 
         const shareId = res.data;
@@ -275,22 +289,56 @@ public class HelloWorld {
       }
     },
 
+    // 处理代码块复制事件 (事件委托)
+    handlePreviewClick(e) {
+      const btn = e.target.closest(".copy-btn");
+      if (btn) {
+        const container = btn.closest(".code-block-container");
+        if (!container) return;
+        const pre = container.querySelector("pre");
+        if (pre) {
+          // textContent 提取纯文本(自带换行)，不受 DOM 高亮 span 的干扰
+          const code = pre.textContent;
+          navigator.clipboard
+            .writeText(code)
+            .then(() => {
+              const textSpan = btn.querySelector(".copy-text");
+              if (textSpan) {
+                textSpan.innerText = "已复制";
+                btn.classList.add("copied");
+                setTimeout(() => {
+                  textSpan.innerText = "复制";
+                  btn.classList.remove("copied");
+                }, 2000);
+              }
+            })
+            .catch(() => {
+              message.error("复制失败");
+            });
+        }
+      }
+    },
+
     handleInput() {
       clearTimeout(this.debounceTimer);
       this.debounceTimer = setTimeout(() => {
         this.renderHtml();
       }, 300);
     },
+
     renderHtml() {
       const rawHtml = marked.parse(this.markdownContent);
       this.htmlContent = DOMPurify.sanitize(rawHtml, {
-        ADD_TAGS: ["math", "annotation", "semantics", "mtext", "mn", "mo", "mi", "msup", "msub", "mfrac", "mrow", "msqrt", "table", "tr", "td", "th"],
-        ADD_ATTR: ["xmlns", "display", "mathvariant", "class", "style"],
+        // 白名单添加 button, svg 相关的标签支持复制按钮的显示
+        ADD_TAGS: ["math", "annotation", "semantics", "mtext", "mn", "mo", "mi", "msup", "msub", "mfrac", "mrow", "msqrt", "table", "tr", "td", "th", "button", "svg", "path", "span"],
+        ADD_ATTR: ["xmlns", "display", "mathvariant", "class", "style", "viewBox", "width", "height", "fill", "d"],
       });
     },
+
     resetContent() {
-      window.location.href = window.location.pathname; // 通过清空参数来重置
+      window.location.href = window.location.pathname;
     },
+
     loadConfig() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -301,14 +349,21 @@ public class HelloWorld {
         }
       }
     },
+
     resetConfig() {
       this.config = { fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif', backgroundColor: "#ffffff" };
       message.success("样式已恢复默认");
     },
+
     async exportToPdf() {
       this.isExporting = true;
       const originalElement = this.$refs.previewRef;
       const clone = originalElement.cloneNode(true);
+
+      // --- 关键修改：剔除克隆中的复制按钮，以免污染 PDF 导出版面 ---
+      const copyBtns = clone.querySelectorAll(".copy-btn");
+      copyBtns.forEach((btn) => btn.remove());
+
       clone.style.height = "auto";
       clone.style.width = "100%";
       clone.style.overflow = "visible";
@@ -393,7 +448,6 @@ public class HelloWorld {
 </script>
 
 <style scoped>
-/* 样式部分保持不变，增加了几个小的调整 */
 .md-page-container {
   height: calc(100vh - 40px);
   display: flex;
@@ -472,17 +526,68 @@ public class HelloWorld {
   overflow-y: hidden;
   page-break-inside: avoid;
 }
-.preview-content :deep(pre[class*="language-"]) {
-  background: #272822 !important;
+
+/* =======================================
+   代码块专属样式 (支持头部和一键复制)
+======================================= */
+.preview-content :deep(.code-block-container) {
+  position: relative;
+  margin: 1.2em 0;
+  background: #272822; /* 匹配 Prism Okaidia 黑色主题 */
   border-radius: 6px;
-  padding: 1em;
-  margin: 1em 0;
+  overflow: hidden;
   page-break-inside: avoid;
 }
+
+.preview-content :deep(.code-header) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: #1e1e1e; /* 稍暗的顶部背景，区分代码内容区 */
+  color: #9cdcfe;
+  font-size: 13px;
+  font-family: Consolas, Monaco, "Andale Mono", monospace;
+  user-select: none;
+}
+
+.preview-content :deep(.copy-btn) {
+  display: flex;
+  align-items: center;
+  background: transparent;
+  border: 1px solid #4d4d4d;
+  color: #d4d4d4;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.2;
+}
+
+.preview-content :deep(.copy-btn:hover) {
+  background: #4d4d4d;
+  color: #fff;
+}
+
+.preview-content :deep(.copy-btn.copied) {
+  color: #4caf50;
+  border-color: #4caf50;
+}
+
+.preview-content :deep(pre[class*="language-"]) {
+  background: transparent !important;
+  margin: 0 !important;
+  border-radius: 0;
+  padding: 12px 16px;
+}
+
 .preview-content :deep(code[class*="language-"]) {
   text-shadow: none !important;
   font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
 }
+
+/* 抽屉样式等无关逻辑 */
 .style-radio-group {
   width: 100%;
 }
