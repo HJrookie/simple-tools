@@ -49,13 +49,13 @@ export default {
     return {
       tools: [
         {
-          title: "xft字符串转JSON",
+          title: "字符串转JSON",
           description: "将 key=value 格式的字符串快速转换为标准 JSON 对象。",
           to: "/tools/string-to-json",
           icon: CodeOutlined,
         },
         {
-          title: "xft智能日志分析器",
+          title: "智能日志分析器",
           description: "上传并分析日志文件，根据上下文规则智能过滤和高亮关键信息。",
           to: "/tools/log-analyzer",
           icon: FileTextOutlined,
@@ -169,6 +169,12 @@ export default {
           description: "可以支持上传图片，压缩后下载，支持批量处理。",
           to: "/tools/image-compress",
           icon: CompressOutlined,
+        },
+        {
+          title: "图片处理工具",
+          description: "在线处理图片，支持批量处理。",
+          to: "https://www.iloveimg.com/zh-cn/",
+          icon: HeartOutlined,
         },
         // {
         //   title: "TL",

@@ -3,7 +3,7 @@
   <div class="md-page-container">
     <a-page-header class="no-print" title="Markdown 实时预览 & PDF 导出" @back="() => this.$router.push('/')" style="padding: 0px 10px">
       <template #extra>
-        <a-space>
+        <a-space v-if="!$route.query.s">
           <!-- 分享按钮 -->
           <a-button @click="shareDocument" :loading="isSharing">
             <template #icon><ShareAltOutlined /></template>

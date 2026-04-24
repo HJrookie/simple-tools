@@ -48,7 +48,7 @@ export default {
   -webkit-backdrop-filter: blur(12px) saturate(180%);
 
   border-radius: 20px; /* 更圆润的角，符合苹果美学 */
-  padding: 16px 24px;
+  padding: 8px 24px;
   cursor: pointer;
   overflow: hidden;
 
@@ -109,7 +109,7 @@ export default {
 }
 
 .card-title {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 600;
   /* 使用苹果系统的字体颜色层级：San Francisco 风格 */
   color: #1d1d1f;
@@ -118,7 +118,7 @@ export default {
 }
 
 .card-description {
-  font-size: 13.5px;
+  font-size: 12px;
   /* 降低对比度，使用二级文本色，更护眼 */
   color: #86868b;
   line-height: 1.4;
