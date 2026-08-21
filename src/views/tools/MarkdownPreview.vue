@@ -1,75 +1,175 @@
-<!-- src/views/tools/MarkdownPreview.vue -->
+<!-- src/views/tools/MarkdownPreview.vue (Apple Glassmorphism & Drag-and-Drop File Replacement) -->
 <template>
-  <div class="md-page-container">
-    <a-page-header class="no-print" title="Markdown 实时预览 & PDF 导出" @back="() => this.$router.push('/')" style="padding: 0px 10px">
-      <template #extra>
-        <a-space v-if="!$route.query.s">
-          <!-- 分享按钮 -->
-          <a-button @click="shareDocument" :loading="isSharing">
-            <template #icon><ShareAltOutlined /></template>
-            分享
-          </a-button>
-          <a-button @click="showSettings = true">
-            <template #icon><SettingOutlined /></template>
-            设置
-          </a-button>
-          <a-button @click="resetContent">
-            <template #icon><ReloadOutlined /></template>
-            重置
-          </a-button>
-          <!-- <a-button type="primary" :loading="isExporting" @click="exportToPdf">
-            <template #icon><FilePdfOutlined /></template>
-            {{ isExporting ? "生成中..." : "导出 PDF" }}
-          </a-button> -->
-        </a-space>
-      </template>
-    </a-page-header>
-
-    <div class="editor-layout">
-      <!-- 左侧：编辑器区域 -->
-      <div class="editor-pane no-print">
-        <div class="pane-header">
-          <span>Markdown 编辑器</span>
-          <span class="tip-text">（支持 LaTeX、高亮、粘贴图片）</span>
-        </div>
-        <div class="code-wrapper">
-          <codemirror v-model="markdownContent" placeholder="# 开始写作..." :style="{ height: '100%' }" :autofocus="true" :indent-with-tab="true" :tab-size="2" :extensions="extensions" @change="handleInput" />
+  <div
+    class="md-preview-container"
+    @dragover.prevent="handleDragOver"
+    @dragenter.prevent="handleDragEnter"
+    @dragleave.prevent="handleDragLeave"
+    @drop.prevent="handleDrop"
+  >
+    <!-- 拖拽文件时的 Apple 毛玻璃遮罩提示 -->
+    <transition name="fade">
+      <div v-if="isDraggingFile" class="drag-drop-overlay" aria-hidden="true">
+        <div class="drop-zone-card">
+          <div class="drop-icon-squircle">
+            <CloudUploadOutlined class="drop-icon" />
+          </div>
+          <h3 class="drop-title">松开鼠标，载入并替换 Markdown 内容</h3>
+          <p class="drop-desc">支持 .md、.markdown、.txt 等文本文件</p>
         </div>
       </div>
+    </transition>
 
-      <!-- 右侧：预览区域 -->
-      <div class="preview-pane">
-        <div class="pane-header no-print">实时预览</div>
-        <!-- 增加 @click 事件监听，用于事件委托捕获复制按钮点击 -->
-        <div id="pdf-content" class="preview-content markdown-body" :style="previewStyle" v-html="htmlContent" ref="previewRef" @click="handlePreviewClick"></div>
+    <!-- 隐藏的本地文件选择器 -->
+    <input
+      type="file"
+      ref="fileInputRef"
+      accept=".md,.markdown,.txt,.json,text/*"
+      style="display: none"
+      @change="handleFileSelected"
+    />
+
+    <!-- 头部 Apple 毛玻璃操作栏 -->
+    <div class="glass-action-bar no-print">
+      <div class="bar-left">
+        <h2 class="tool-heading">Markdown 实时预览 & 导出</h2>
+        <span class="tool-tip-pill">
+          <FileMarkdownOutlined />
+          <span>拖拽文件直接替换 · LaTeX 支持</span>
+        </span>
+      </div>
+
+      <div class="bar-right" v-if="!$route.query.s">
+        <!-- 导入文件 -->
+        <a-button @click="triggerFileInput" class="action-btn">
+          <template #icon><FolderOpenOutlined /></template>
+          导入文件
+        </a-button>
+
+        <!-- 导出 PDF / 打印 -->
+        <a-button type="primary" @click="exportToPdf" class="action-btn export-btn" :loading="isExporting">
+          <template #icon><FilePdfOutlined /></template>
+          导出 PDF / 打印
+        </a-button>
+
+        <!-- 分享按钮 -->
+        <a-button @click="shareDocument" :loading="isSharing" class="action-btn">
+          <template #icon><ShareAltOutlined /></template>
+          分享
+        </a-button>
+
+        <!-- 排版设置 -->
+        <a-button @click="showSettings = true" class="action-btn">
+          <template #icon><SettingOutlined /></template>
+          排版设置
+        </a-button>
+
+        <!-- 重置 -->
+        <a-button @click="resetToDefault" class="action-btn">
+          <template #icon><ReloadOutlined /></template>
+          重置
+        </a-button>
       </div>
     </div>
 
-    <!-- 样式设置抽屉 -->
-    <a-drawer title="阅读与导出设置" placement="right" :open="showSettings" @close="showSettings = false">
-      <a-typography-title :level="5">字体风格</a-typography-title>
-      <a-radio-group v-model:value="config.fontFamily" class="style-radio-group">
-        <a-radio class="style-radio" v-for="font in fontOptions" :key="font.value" :value="font.value">
-          <div :style="{ fontFamily: font.value }">{{ font.label }}</div>
-        </a-radio>
-      </a-radio-group>
-      <a-divider />
-      <a-typography-title :level="5">背景颜色</a-typography-title>
-      <div class="color-grid">
-        <div
-          v-for="color in colorOptions"
-          :key="color.value"
-          class="color-swatch"
-          :class="{ active: config.backgroundColor === color.value }"
-          :style="{ backgroundColor: color.value }"
-          @click="config.backgroundColor = color.value"
-        >
-          <div class="color-label">{{ color.label }}</div>
-          <CheckOutlined v-if="config.backgroundColor === color.value" class="check-icon" />
+    <!-- 主体双栏编辑器与预览工作区 -->
+    <div class="editor-layout">
+      <!-- 左侧：编辑器区域 -->
+      <div class="glass-panel editor-pane no-print">
+        <div class="panel-header">
+          <div class="header-title-group">
+            <span class="panel-title">Markdown 源码</span>
+            <span class="tip-text">（拖放外部文件直接替换 · 粘贴图片）</span>
+          </div>
+          <div class="header-meta">
+            <span class="stat-badge">{{ docStats.words }} 词 · {{ docStats.chars }} 字符 · {{ docStats.lines }} 行</span>
+          </div>
+        </div>
+
+        <div class="code-wrapper">
+          <codemirror
+            v-model="markdownContent"
+            placeholder="# 开始写作，或直接把 .md 文件拖进窗口..."
+            :style="{ height: '100%' }"
+            :autofocus="true"
+            :indent-with-tab="true"
+            :tab-size="2"
+            :extensions="extensions"
+            @change="handleInput"
+          />
         </div>
       </div>
-      <a-divider />
-      <a-button block @click="resetConfig">恢复默认样式</a-button>
+
+      <!-- 右侧：实时预览区域 -->
+      <div class="glass-panel preview-pane">
+        <div class="panel-header no-print">
+          <span class="panel-title">实时渲染视图</span>
+          <span class="preview-theme-indicator" :style="{ backgroundColor: config.backgroundColor }">
+            {{ currentThemeLabel }}
+          </span>
+        </div>
+
+        <div
+          id="pdf-content"
+          class="preview-content markdown-body"
+          :style="previewStyle"
+          v-html="htmlContent"
+          ref="previewRef"
+          @click="handlePreviewClick"
+        ></div>
+      </div>
+    </div>
+
+    <!-- 样式设置抽屉 (Apple Glass Drawer) -->
+    <a-drawer
+      title="阅读与导出排版设置"
+      placement="right"
+      :open="showSettings"
+      @close="showSettings = false"
+      :width="360"
+    >
+      <div class="drawer-section">
+        <h4 class="drawer-title">字体风格</h4>
+        <div class="font-options-list">
+          <div
+            v-for="font in fontOptions"
+            :key="font.value"
+            class="font-option-card"
+            :class="{ active: config.fontFamily === font.value }"
+            @click="config.fontFamily = font.value"
+          >
+            <span class="font-sample" :style="{ fontFamily: font.value }">{{ font.label }}</span>
+            <CheckOutlined v-if="config.fontFamily === font.value" class="font-check-icon" />
+          </div>
+        </div>
+      </div>
+
+      <a-divider style="margin: 20px 0" />
+
+      <div class="drawer-section">
+        <h4 class="drawer-title">预览背景色</h4>
+        <div class="color-grid">
+          <div
+            v-for="color in colorOptions"
+            :key="color.value"
+            class="color-swatch-card"
+            :class="{ active: config.backgroundColor === color.value }"
+            :style="{ backgroundColor: color.value }"
+            @click="config.backgroundColor = color.value"
+          >
+            <span class="color-label">{{ color.label }}</span>
+            <CheckOutlined v-if="config.backgroundColor === color.value" class="color-check-icon" />
+          </div>
+        </div>
+      </div>
+
+      <a-divider style="margin: 20px 0" />
+
+      <div class="drawer-footer-actions">
+        <a-button block @click="resetConfig">
+          恢复默认排版
+        </a-button>
+      </div>
     </a-drawer>
 
     <div ref="exportContainer" style="position: fixed; left: -10000px; top: 0; width: 800px; z-index: -100"></div>
@@ -77,8 +177,17 @@
 </template>
 
 <script>
-import { PageHeader, Button, Space, message, Drawer, Radio, TypographyTitle, Divider, Modal } from "ant-design-vue";
-import { FilePdfOutlined, ReloadOutlined, SettingOutlined, CheckOutlined, ShareAltOutlined, CopyOutlined } from "@ant-design/icons-vue";
+import { message, Modal } from "ant-design-vue";
+import {
+  FilePdfOutlined,
+  ReloadOutlined,
+  SettingOutlined,
+  CheckOutlined,
+  ShareAltOutlined,
+  FolderOpenOutlined,
+  CloudUploadOutlined,
+  FileMarkdownOutlined,
+} from "@ant-design/icons-vue";
 import { Codemirror } from "vue-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { oneDark } from "@codemirror/theme-one-dark";
@@ -91,7 +200,7 @@ import "katex/dist/katex.min.css";
 import markedKatex from "marked-katex-extension";
 import Prism from "prismjs";
 import "prismjs/themes/prism-okaidia.css";
-import "prismjs/components/prism-json"; // 额外的高亮支持 json
+import "prismjs/components/prism-json";
 import "prismjs/components/prism-java";
 import "prismjs/components/prism-python";
 import "prismjs/components/prism-bash";
@@ -111,7 +220,6 @@ renderer.code = ({ text, lang }) => {
   const highlighted = Prism.highlight(text, language, lang || "plaintext");
   const langText = lang ? lang.toLowerCase() : "text";
 
-  // 复制按钮使用的 SVG 图标
   const copySvg = `<svg viewBox="0 0 1024 1024" width="14" height="14" fill="currentColor" style="vertical-align: middle; margin-right: 4px;"><path d="M832 64H296c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h496v688c0 4.4 3.6 8 8 8h56c4.4 0 8-3.6 8-8V96c0-17.7-14.3-32-32-32z"></path><path d="M704 192H192c-17.7 0-32 14.3-32 32v530.7c0 8.5 3.4 16.6 9.4 22.6l173.3 173.3c6 6 14.1 9.4 22.6 9.4H704c17.7 0 32-14.3 32-32V224c0-17.7-14.3-32-32-32zM352 811.3V736c0-4.4-3.6-8-8-8h-75.3l83.3 83.3zM664 888H416V712c0-17.7-14.3-32-32-32H232V264h432v624z"></path></svg>`;
 
   return `<div class="code-block-container">
@@ -126,55 +234,131 @@ marked.use({ renderer });
 
 const STORAGE_KEY = "md_preview_config_v1";
 
+const defaultSampleMarkdown = `# 全能 Markdown 实时写作器
+
+✨ 支持 **外部文件直接拖入替换**、**LaTeX 公式** 与 **高清矢量 PDF 导出**。
+
+---
+
+## 1. 代码一键复制测试
+
+\`\`\`typescript
+interface UserProfile {
+  id: number;
+  name: string;
+  role: 'admin' | 'creator';
+  isVerified: boolean;
+}
+
+const welcomeUser = (user: UserProfile): string => {
+  return \`Welcome, \${user.name} (\${user.role})!\`;
+};
+\`\`\`
+
+\`\`\`bash
+# 快速启动
+pnpm install
+pnpm run dev
+\`\`\`
+
+---
+
+## 2. 数学公式 (LaTeX)
+
+行内质能方程公式： $E = mc^2$
+
+正态分布概率密度函数：
+
+$$
+f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}} \\exp\\left( -\\frac{(x-\\mu)^2}{2\\sigma^2} \\right)
+$$
+
+---
+
+## 3. 拖拽与导入支持
+
+> 💡 **提示**：直接把本地任意 \`.md\` 或 \`.txt\` 文档拖进此窗口，即可瞬间载入并实时渲染！
+`;
+
 export default {
   name: "MarkdownPreview",
   components: {
-    "a-page-header": PageHeader,
-    "a-button": Button,
-    "a-space": Space,
-    "a-drawer": Drawer,
-    "a-radio-group": Radio.Group,
-    "a-radio": Radio,
-    "a-typography-title": TypographyTitle,
-    "a-divider": Divider,
     FilePdfOutlined,
     ReloadOutlined,
     SettingOutlined,
     CheckOutlined,
     ShareAltOutlined,
+    FolderOpenOutlined,
+    CloudUploadOutlined,
+    FileMarkdownOutlined,
     Codemirror,
   },
   data() {
     return {
       markdownContent: "",
       htmlContent: "",
-      extensions: [markdown(), oneDark, ViewPlugin.fromClass(class {}, { eventHandlers: { paste: this.handlePasteEvent } })],
+      extensions: [
+        markdown(),
+        oneDark,
+        ViewPlugin.fromClass(class {}, { eventHandlers: { paste: this.handlePasteEvent } }),
+      ],
       debounceTimer: null,
       isExporting: false,
       isSharing: false,
       showSettings: false,
+      isDraggingFile: false,
+      dragCounter: 0,
       apiBase: "https://notes.24992345.xyz/api",
       config: {
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif',
         backgroundColor: "#ffffff",
       },
       fontOptions: [
-        { label: "标准黑体 (系统默认)", value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif' },
-        { label: "微软雅黑 (经典)", value: '"Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif' },
-        { label: "优雅宋体 (适合阅读)", value: '"Songti SC", "SimSun", "Times New Roman", Times, serif' },
-        { label: "等宽代码 (技术文档)", value: '"Courier New", Courier, monospace' },
+        { label: "Apple SF / 系统默认", value: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif' },
+        { label: "微软雅黑 (现代无衬线)", value: '"Microsoft YaHei", "PingFang SC", sans-serif' },
+        { label: "宋体 / 衬线 (纸质阅读)", value: '"Songti SC", "SimSun", "Times New Roman", Times, serif' },
+        { label: "等宽字体 (技术文档)", value: '"SF Mono", Menlo, Monaco, "Courier New", monospace' },
       ],
       colorOptions: [
         { label: "纯净白", value: "#ffffff" },
-        { label: "护眼绿", value: "#cce8cf" },
-        { label: "羊皮纸", value: "#f8f1e1" },
-        { label: "极客灰", value: "#f5f5f5" },
+        { label: "极客灰", value: "#f8f9fa" },
+        { label: "羊皮纸", value: "#fcf8ee" },
+        { label: "护眼绿", value: "#eef7f0" },
       ],
     };
   },
   computed: {
     previewStyle() {
-      return { fontFamily: this.config.fontFamily, backgroundColor: this.config.backgroundColor };
+      return {
+        fontFamily: this.config.fontFamily,
+        backgroundColor: this.config.backgroundColor,
+      };
+    },
+    currentThemeLabel() {
+      const match = this.colorOptions.find((c) => c.value === this.config.backgroundColor);
+      return match ? match.label : "纯净白";
+    },
+    docStats() {
+      const text = this.markdownContent || "";
+      const chars = text.length;
+      const lines = text ? text.split("\n").length : 0;
+      const words = (text.match(/[\u4e00-\u9fa5]|\b\w+\b/g) || []).length;
+      return { chars, lines, words };
+    },
+    documentTitle() {
+      const match = this.markdownContent.match(/^#\s+(.+)$/m);
+      if (match && match[1]) {
+        return match[1].trim().replace(/[\\/:*?"<>|]/g, "_");
+      }
+      return `Markdown_${Date.now()}`;
+    },
+  },
+  watch: {
+    config: {
+      deep: true,
+      handler(newVal) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newVal));
+      },
     },
   },
   mounted() {
@@ -182,10 +366,61 @@ export default {
     this.initContent();
   },
   methods: {
-    getAuthHeader(pass) {
-      const token = pass || sessionStorage.getItem("notes_session_key");
-      return token ? { "x-notes-auth": encodeURIComponent(token) } : {};
+    // --- 核心：拖拽外部文件载入并直接替换内容 ---
+    handleDragEnter(e) {
+      if (e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
+        this.dragCounter++;
+        this.isDraggingFile = true;
+      }
     },
+    handleDragOver(e) {
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = "copy";
+      }
+      this.isDraggingFile = true;
+    },
+    handleDragLeave() {
+      this.dragCounter--;
+      if (this.dragCounter <= 0) {
+        this.dragCounter = 0;
+        this.isDraggingFile = false;
+      }
+    },
+    handleDrop(e) {
+      this.dragCounter = 0;
+      this.isDraggingFile = false;
+
+      const files = e.dataTransfer?.files;
+      if (!files || files.length === 0) return;
+
+      const file = files[0];
+      this.readFileContent(file);
+    },
+
+    triggerFileInput() {
+      this.$refs.fileInputRef.click();
+    },
+    handleFileSelected(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      this.readFileContent(files[0]);
+      e.target.value = "";
+    },
+
+    readFileContent(file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target.result;
+        this.markdownContent = content;
+        this.renderHtml();
+        message.success(`已载入并替换内容: ${file.name}`);
+      };
+      reader.onerror = () => {
+        message.error("读取文件失败，请确保文件是文本格式！");
+      };
+      reader.readAsText(file, "UTF-8");
+    },
+
     async initContent() {
       const urlParams = new URLSearchParams(window.location.search);
       const shareId = urlParams.get("s");
@@ -206,41 +441,15 @@ export default {
           this.renderHtml();
         }
       } else {
-        this.markdownContent = `# 全能 Markdown 编辑器
-
-支持 **LaTeX 公式** 与 **多语言代码一键复制**。
-
-## 1. 代码一键复制测试
-
-**JSON:**
-\`\`\`json
-{
-  "name": "simple-tools",
-  "private": true,
-  "version": "0.0.0",
-  "scripts": {
-    "dev": "vite"
-  }
-}
-\`\`\`
-
-**Shell:**
-\`\`\`bash
-npm install ant-design-vue@next
-npm run dev
-\`\`\`
-
-## 2. 数学公式 (LaTeX)
-
-行内公式： $E = mc^2$
-
-块级公式：
-$$
-\\frac{1}{\\sigma\\sqrt{2\\pi}} \\exp\\left( -\\frac{(x-\\mu)^2}{2\\sigma^2} \\right)
-$$
-`;
+        this.markdownContent = defaultSampleMarkdown;
         this.renderHtml();
       }
+    },
+
+    resetToDefault() {
+      this.markdownContent = defaultSampleMarkdown;
+      this.renderHtml();
+      message.success("已重置为默认示例内容");
     },
 
     async shareDocument() {
@@ -269,12 +478,12 @@ $$
         const shareUrl = `${window.location.origin}${window.location.pathname}?s=${shareId}`;
 
         Modal.success({
-          title: "分享链接已生成 (有效期30天)",
+          title: "分享链接已生成 (有效期 30 天)",
           content: shareUrl,
           okText: "复制链接",
           onOk: () => {
             navigator.clipboard.writeText(shareUrl);
-            message.success("已复制");
+            message.success("链接已复制到剪贴板");
           },
         });
       } catch (e) {
@@ -289,7 +498,6 @@ $$
       }
     },
 
-    // 处理代码块复制事件 (事件委托)
     handlePreviewClick(e) {
       const btn = e.target.closest(".copy-btn");
       if (btn) {
@@ -297,7 +505,6 @@ $$
         if (!container) return;
         const pre = container.querySelector("pre");
         if (pre) {
-          // textContent 提取纯文本(自带换行)，不受 DOM 高亮 span 的干扰
           const code = pre.textContent;
           navigator.clipboard
             .writeText(code)
@@ -323,20 +530,15 @@ $$
       clearTimeout(this.debounceTimer);
       this.debounceTimer = setTimeout(() => {
         this.renderHtml();
-      }, 300);
+      }, 250);
     },
 
     renderHtml() {
-      const rawHtml = marked.parse(this.markdownContent);
+      const rawHtml = marked.parse(this.markdownContent || "");
       this.htmlContent = DOMPurify.sanitize(rawHtml, {
-        // 白名单添加 button, svg 相关的标签支持复制按钮的显示
         ADD_TAGS: ["math", "annotation", "semantics", "mtext", "mn", "mo", "mi", "msup", "msub", "mfrac", "mrow", "msqrt", "table", "tr", "td", "th", "button", "svg", "path", "span"],
         ADD_ATTR: ["xmlns", "display", "mathvariant", "class", "style", "viewBox", "width", "height", "fill", "d"],
       });
-    },
-
-    resetContent() {
-      window.location.href = window.location.pathname;
     },
 
     loadConfig() {
@@ -351,10 +553,16 @@ $$
     },
 
     resetConfig() {
-      this.config = { fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif', backgroundColor: "#ffffff" };
-      message.success("样式已恢复默认");
+      this.config = {
+        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif',
+        backgroundColor: "#ffffff",
+      };
+      message.success("排版样式已恢复默认");
     },
 
+    // ==========================================
+    // 高清矢量 PDF 导出 (通过隔离 iframe 唤起打印/保存为 PDF)
+    // ==========================================
     async exportToPdf() {
       this.isExporting = true;
       const originalElement = this.$refs.previewRef;
@@ -421,14 +629,14 @@ $$
           const file = items[i].getAsFile();
           if (file) {
             this.convertFileToBase64(file).then((base64) => {
-              const imageMarkdown = `\n![粘贴的图片](${base64})\n`;
+              const imageMarkdown = `\n![图片](${base64})\n`;
               const range = view.state.selection.main;
               const transaction = view.state.update({
                 changes: { from: range.from, to: range.to, insert: imageMarkdown },
                 selection: { anchor: range.from + imageMarkdown.length },
               });
               view.dispatch(transaction);
-              message.success("图片已粘贴");
+              message.success("已粘贴图片");
             });
           }
           return;
@@ -448,106 +656,254 @@ $$
 </script>
 
 <style scoped>
-.md-page-container {
-  height: calc(100vh - 40px);
+.md-preview-container {
+  position: relative;
+  height: calc(100vh - 24px);
+  padding: 12px 18px;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  font-family: var(--font-apple, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif);
 }
+
+/* 拖拽文件时的 Apple 毛玻璃遮罩 */
+.drag-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.drop-zone-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 64px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 2px dashed #0071e3;
+  border-radius: 28px;
+  box-shadow: 0 20px 50px rgba(0, 113, 227, 0.15);
+  transform: scale(1.02);
+  animation: pulseCard 2s infinite ease-in-out;
+}
+
+@keyframes pulseCard {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+.drop-icon-squircle {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #0071e3 0%, #6366f1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 32px;
+  margin-bottom: 18px;
+  box-shadow: 0 8px 20px rgba(0, 113, 227, 0.3);
+}
+
+.drop-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-bottom: 8px;
+}
+
+.drop-desc {
+  font-size: 14px;
+  color: #6e6e73;
+  margin: 0;
+}
+
+/* 顶部 Apple 毛玻璃操作栏 */
+.glass-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  padding: 10px 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.bar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tool-heading {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.tool-tip-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: rgba(0, 113, 227, 0.1);
+  color: #0071e3;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.bar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+.export-btn {
+  background: linear-gradient(180deg, #0077ed 0%, #0071e3 100%) !important;
+  border: none !important;
+}
+
+/* 双栏编辑器与预览 */
 .editor-layout {
   flex: 1;
-  display: flex;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
   overflow: hidden;
 }
-.editor-pane,
-.preview-pane {
-  flex: 1;
+
+.glass-panel {
   display: flex;
   flex-direction: column;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f0f0f0;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 20px;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.04);
   overflow: hidden;
+  height: 100%;
 }
-.pane-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  font-weight: 600;
-  background-color: #fafafa;
-  color: #555;
-  flex-shrink: 0;
+
+.panel-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.45);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
 }
+
+.header-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
 .tip-text {
-  font-size: 12px;
-  color: #999;
-  font-weight: normal;
+  font-size: 11.5px;
+  color: #86868b;
 }
+
+.stat-badge {
+  font-size: 11.5px;
+  color: #86868b;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.preview-theme-indicator {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #48484a;
+}
+
 .code-wrapper {
   flex: 1;
   overflow: hidden;
+  background: #282c34;
 }
+
 .code-wrapper :deep(.cm-editor) {
   height: 100%;
+  font-family: var(--font-mono, monospace);
+  font-size: 14px;
 }
-.preview-pane {
-  background-color: #ffffff;
-}
+
 .preview-content {
   flex: 1;
   overflow-y: auto;
-  padding: 32px 40px;
-  background-color: white;
-  transition:
-    background-color 0.3s,
-    color 0.3s;
+  padding: 32px 36px;
+  transition: background-color 0.3s, color 0.3s;
 }
+
 .preview-content :deep(img) {
   max-width: 100%;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  page-break-inside: avoid;
-  break-inside: avoid;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
-.preview-content::-webkit-scrollbar {
-  width: 8px;
-}
-.preview-content::-webkit-scrollbar-thumb {
-  background: #ddd;
-  border-radius: 4px;
-}
-.preview-content::-webkit-scrollbar-thumb:hover {
-  background: #ccc;
-}
+
 .preview-content :deep(.katex-display) {
   overflow-x: auto;
   overflow-y: hidden;
-  page-break-inside: avoid;
 }
 
-/* =======================================
-   代码块专属样式 (支持头部和一键复制)
-======================================= */
+/* 代码块高亮与一键复制 */
 .preview-content :deep(.code-block-container) {
   position: relative;
-  margin: 1.2em 0;
-  background: #272822; /* 匹配 Prism Okaidia 黑色主题 */
-  border-radius: 6px;
+  margin: 1.4em 0;
+  background: #272822;
+  border-radius: 12px;
   overflow: hidden;
-  page-break-inside: avoid;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .preview-content :deep(.code-header) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 12px;
-  background: #1e1e1e; /* 稍暗的顶部背景，区分代码内容区 */
+  padding: 8px 14px;
+  background: #1e1e1e;
   color: #9cdcfe;
-  font-size: 13px;
-  font-family: Consolas, Monaco, "Andale Mono", monospace;
+  font-size: 12px;
+  font-family: var(--font-mono, monospace);
   user-select: none;
 }
 
@@ -555,86 +911,145 @@ $$
   display: flex;
   align-items: center;
   background: transparent;
-  border: 1px solid #4d4d4d;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #d4d4d4;
-  border-radius: 4px;
-  padding: 3px 8px;
-  font-size: 12px;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 0.2s ease;
-  line-height: 1.2;
 }
 
 .preview-content :deep(.copy-btn:hover) {
-  background: #4d4d4d;
-  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
 }
 
 .preview-content :deep(.copy-btn.copied) {
-  color: #4caf50;
-  border-color: #4caf50;
+  color: #34d399;
+  border-color: #34d399;
 }
 
 .preview-content :deep(pre[class*="language-"]) {
   background: transparent !important;
   margin: 0 !important;
   border-radius: 0;
-  padding: 12px 16px;
+  padding: 14px 16px;
 }
 
-.preview-content :deep(code[class*="language-"]) {
-  text-shadow: none !important;
-  font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
-}
-
-/* 抽屉样式等无关逻辑 */
-.style-radio-group {
-  width: 100%;
-}
-.style-radio {
+/* 抽屉设置选项 */
+.drawer-section {
   display: flex;
-  align-items: flex-start;
-  margin-bottom: 16px;
-  padding: 8px;
-  border-radius: 6px;
+  flex-direction: column;
+  gap: 12px;
 }
-.style-radio:hover {
-  background-color: #f5f5f5;
+
+.drawer-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
 }
+
+.font-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.font-option-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.font-option-card:hover {
+  background: rgba(0, 113, 227, 0.06);
+}
+
+.font-option-card.active {
+  background: rgba(0, 113, 227, 0.1);
+  border-color: #0071e3;
+}
+
+.font-sample {
+  font-size: 13.5px;
+  color: #1d1d1f;
+}
+
+.font-check-icon {
+  color: #0071e3;
+  font-size: 14px;
+}
+
 .color-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
-.color-swatch {
+
+.color-swatch-card {
   height: 60px;
-  border-radius: 8px;
-  border: 2px solid transparent;
+  border-radius: 12px;
+  border: 2px solid rgba(0, 0, 0, 0.08);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s, border-color 0.2s;
 }
-.color-swatch:hover {
-  transform: scale(1.02);
+
+.color-swatch-card:hover {
+  transform: translateY(-2px);
 }
-.color-swatch.active {
-  border-color: #1890ff;
+
+.color-swatch-card.active {
+  border-color: #0071e3;
+  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.2);
 }
+
 .color-label {
   font-size: 12px;
-  color: #555;
-  background: rgba(255, 255, 255, 0.8);
-  padding: 2px 6px;
-  border-radius: 4px;
+  color: #48484a;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 500;
 }
-.check-icon {
+
+.color-check-icon {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  color: #1890ff;
+  top: 6px;
+  right: 6px;
+  color: #0071e3;
+  font-size: 13px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@media (max-width: 900px) {
+  .editor-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .glass-panel {
+    height: 480px;
+  }
 }
 </style>
