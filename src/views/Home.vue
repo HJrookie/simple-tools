@@ -32,6 +32,7 @@ import {
   SwapOutlined,
   BuildOutlined,
   CompressOutlined,
+  SplitCellsOutlined,
 } from "@ant-design/icons-vue";
 import { Html5Outlined } from "@ant-design/icons-vue";
 
@@ -133,9 +134,9 @@ export default {
         },
         {
           title: "文本对比工具",
-          description: "直接在浏览器本地对比两个文本文件，高亮显示差异。",
-          to: "https://text-compare.com/", // 使用完整的外部链接
-          icon: ToolOutlined,
+          description: "本地多模式文本差异对比，双栏分屏与词级精细颜色高亮。",
+          to: "/tools/text-compare",
+          icon: SplitCellsOutlined,
         },
         {
           title: "base64 编码/解码工具",

@@ -85,10 +85,15 @@ const routes = [
     component: () => import("../views/tools/ImageCompress.vue"),
   },
   {
+    path: "/tools/text-compare",
+    name: "TextCompare",
+    component: () => import("../views/tools/TextCompare.vue"),
+  },
+  {
     path: "/tools/taluo",
     name: "Taluo",
     component: () => import("../views/tools/taluo/index.vue"),
-  }
+  },
 ];
 
 const router = createRouter({
