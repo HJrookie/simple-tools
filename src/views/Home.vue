@@ -33,6 +33,7 @@ import {
   BuildOutlined,
   CompressOutlined,
   SplitCellsOutlined,
+  FileImageOutlined,
 } from "@ant-design/icons-vue";
 import { Html5Outlined } from "@ant-design/icons-vue";
 
@@ -170,6 +171,12 @@ export default {
           description: "可以支持上传图片，压缩后下载，支持批量处理。",
           to: "/tools/image-compress",
           icon: CompressOutlined,
+        },
+        {
+          title: "Favicon / ICO 极速生成器",
+          description: "纯本地将各类图片转为浏览器左上角 ICO 图标，支持 16~256px 多尺寸合一及全套 Web 图标包。",
+          to: "/tools/ico-converter",
+          icon: FileImageOutlined,
         },
         {
           title: "图片处理工具",

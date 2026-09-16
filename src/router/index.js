@@ -85,6 +85,11 @@ const routes = [
     component: () => import("../views/tools/ImageCompress.vue"),
   },
   {
+    path: "/tools/ico-converter",
+    name: "IcoConverter",
+    component: () => import("../views/tools/IcoConverter.vue"),
+  },
+  {
     path: "/tools/text-compare",
     name: "TextCompare",
     component: () => import("../views/tools/TextCompare.vue"),
