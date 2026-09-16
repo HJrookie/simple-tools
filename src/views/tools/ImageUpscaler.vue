@@ -599,6 +599,12 @@ export default {
     window.addEventListener("paste", this.handlePaste);
     this.detectHardware();
     this.checkAllModelsCache();
+
+    const sharedImg = sessionStorage.getItem("shared_image_data");
+    if (sharedImg) {
+      sessionStorage.removeItem("shared_image_data");
+      this.loadFromDataUrl(sharedImg, "ai_cutout.png");
+    }
   },
   beforeUnmount() {
     abortUpscaleTask();
@@ -710,6 +716,24 @@ export default {
         message.success("已加载内置测试样张");
       };
       img.src = sample.url;
+    },
+
+    loadFromDataUrl(dataUrl, name = "ai_cutout.png") {
+      const img = new Image();
+      img.onload = () => {
+        this.currentImage = img;
+        this.sourceInfo = {
+          name,
+          size: Math.round(dataUrl.length * 0.75),
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+          dataUrl,
+        };
+        this.resultImage = "";
+        this.resultBlob = null;
+        message.success(`已成功载入抠图素材: ${name}`);
+      };
+      img.src = dataUrl;
     },
 
     cancelTask() {

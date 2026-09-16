@@ -685,6 +685,11 @@ export default {
   },
   mounted() {
     window.addEventListener("paste", this.handlePaste);
+    const sharedImg = sessionStorage.getItem("shared_image_data");
+    if (sharedImg) {
+      sessionStorage.removeItem("shared_image_data");
+      this.loadFromDataUrl(sharedImg, "ai_cutout.png");
+    }
   },
   beforeUnmount() {
     window.removeEventListener("paste", this.handlePaste);
@@ -791,6 +796,22 @@ export default {
         message.error(err.message || "加载图片失败");
       }
       return false; // 阻止默认上传行为
+    },
+
+    async loadFromDataUrl(dataUrl, name = "ai_cutout.png") {
+      const img = new Image();
+      img.onload = async () => {
+        this.currentImage = img;
+        this.sourceInfo = {
+          name,
+          size: Math.round(dataUrl.length * 0.75),
+          width: img.naturalWidth || img.width,
+          height: img.naturalHeight || img.height,
+        };
+        await this.updatePreviews();
+        message.success(`成功从抠图工具载入透明素材: ${name}`);
+      };
+      img.src = dataUrl;
     },
 
     resetImage() {

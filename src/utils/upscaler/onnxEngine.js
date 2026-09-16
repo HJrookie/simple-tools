@@ -12,11 +12,12 @@ import * as ort from "onnxruntime-web";
 import { downloadAndCacheModel } from "./modelStorage.js";
 import { lanczosResample } from "./lanczos.js";
 
-// 配置 Wasm 文件托管源 (使用全球快速 CDN)
+// 配置 Wasm 文件托管源 (使用与安装包精确匹配的 1.30.0 CDN)
 try {
-  ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.0/dist/";
-  ort.env.wasm.numThreads = Math.min(navigator.hardwareConcurrency || 4, 4);
+  ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/";
+  ort.env.wasm.numThreads = 1;
   ort.env.wasm.simd = true;
+  ort.env.logLevel = "error";
 } catch (e) {
   console.warn("初始化 ORT wasm 配置", e);
 }
@@ -99,11 +100,13 @@ export async function loadModelSession(modelId = "espcn-x2", onProgress = null) 
     session = await ort.InferenceSession.create(modelBuffer, {
       executionProviders: [bestEP, "wasm"],
       graphOptimizationLevel: "all",
+      logSeverityLevel: 3,
     });
   } catch (err) {
     session = await ort.InferenceSession.create(modelBuffer, {
       executionProviders: ["wasm"],
       graphOptimizationLevel: "all",
+      logSeverityLevel: 3,
     });
   }
 

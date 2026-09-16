@@ -95,9 +95,19 @@ const routes = [
     component: () => import("../views/tools/ImageUpscaler.vue"),
   },
   {
+    path: "/tools/background-removal",
+    name: "BackgroundRemoval",
+    component: () => import("../views/tools/BackgroundRemoval.vue"),
+  },
+  {
     path: "/tools/text-compare",
     name: "TextCompare",
     component: () => import("../views/tools/TextCompare.vue"),
+  },
+  {
+    path: "/tools/har-analyzer",
+    name: "HarAnalyzer",
+    component: () => import("../views/tools/HarAnalyzer.vue"),
   },
   {
     path: "/tools/taluo",
