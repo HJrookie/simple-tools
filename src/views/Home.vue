@@ -34,6 +34,7 @@ import {
   CompressOutlined,
   SplitCellsOutlined,
   FileImageOutlined,
+  ZoomInOutlined,
 } from "@ant-design/icons-vue";
 import { Html5Outlined } from "@ant-design/icons-vue";
 
@@ -177,6 +178,12 @@ export default {
           description: "纯本地将各类图片转为浏览器左上角 ICO 图标，支持 16~256px 多尺寸合一及全套 Web 图标包。",
           to: "/tools/ico-converter",
           icon: FileImageOutlined,
+        },
+        {
+          title: "图片无损放大 (超分辨率)",
+          description: "纯前端本地执行，结合 AI 神经网络与 Lanczos-3+CAS 边缘自适应锐化，支持 2x~4x 几乎无损放大。",
+          to: "/tools/image-upscaler",
+          icon: ZoomInOutlined,
         },
         {
           title: "图片处理工具",

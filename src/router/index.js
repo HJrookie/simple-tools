@@ -90,6 +90,11 @@ const routes = [
     component: () => import("../views/tools/IcoConverter.vue"),
   },
   {
+    path: "/tools/image-upscaler",
+    name: "ImageUpscaler",
+    component: () => import("../views/tools/ImageUpscaler.vue"),
+  },
+  {
     path: "/tools/text-compare",
     name: "TextCompare",
     component: () => import("../views/tools/TextCompare.vue"),
