@@ -39,43 +39,59 @@
         </span>
       </div>
 
-      <div class="bar-right" v-if="!$route.query.s">
-        <!-- 导入文件 -->
-        <a-button @click="triggerFileInput" class="action-btn">
-          <template #icon><FolderOpenOutlined /></template>
-          导入文件
+      <div class="bar-right">
+        <!-- 纯览 / 双栏视图切换 -->
+        <a-button
+          @click="togglePreviewOnly"
+          class="action-btn preview-toggle-btn"
+          :class="{ 'preview-active-btn': isPreviewOnly }"
+          :title="isPreviewOnly ? '退出全宽预览，恢复双栏编辑 (Esc)' : '隐藏左侧源码，右侧全宽预览'"
+        >
+          <template #icon>
+            <EyeOutlined v-if="!isPreviewOnly" />
+            <LayoutOutlined v-else />
+          </template>
+          {{ isPreviewOnly ? '显示编辑器' : '只看预览' }}
         </a-button>
 
-        <!-- 导出 PDF / 打印 -->
-        <a-button type="primary" @click="exportToPdf" class="action-btn export-btn" :loading="isExporting">
-          <template #icon><FilePdfOutlined /></template>
-          导出 PDF / 打印
-        </a-button>
+        <template v-if="!$route.query.s">
+          <!-- 导入文件 -->
+          <a-button @click="triggerFileInput" class="action-btn">
+            <template #icon><FolderOpenOutlined /></template>
+            导入文件
+          </a-button>
 
-        <!-- 分享按钮 -->
-        <a-button @click="shareDocument" :loading="isSharing" class="action-btn">
-          <template #icon><ShareAltOutlined /></template>
-          分享
-        </a-button>
+          <!-- 导出 PDF / 打印 -->
+          <a-button type="primary" @click="exportToPdf" class="action-btn export-btn" :loading="isExporting">
+            <template #icon><FilePdfOutlined /></template>
+            导出 PDF / 打印
+          </a-button>
 
-        <!-- 排版设置 -->
-        <a-button @click="showSettings = true" class="action-btn">
-          <template #icon><SettingOutlined /></template>
-          排版设置
-        </a-button>
+          <!-- 分享按钮 -->
+          <a-button @click="shareDocument" :loading="isSharing" class="action-btn">
+            <template #icon><ShareAltOutlined /></template>
+            分享
+          </a-button>
 
-        <!-- 重置 -->
-        <a-button @click="resetToDefault" class="action-btn">
-          <template #icon><ReloadOutlined /></template>
-          重置
-        </a-button>
+          <!-- 排版设置 -->
+          <a-button @click="showSettings = true" class="action-btn">
+            <template #icon><SettingOutlined /></template>
+            排版设置
+          </a-button>
+
+          <!-- 重置 -->
+          <a-button @click="resetToDefault" class="action-btn">
+            <template #icon><ReloadOutlined /></template>
+            重置
+          </a-button>
+        </template>
       </div>
     </div>
 
     <!-- 主体双栏编辑器与预览工作区 -->
-    <div class="editor-layout">
+    <div class="editor-layout" :class="{ 'preview-only': isPreviewOnly }">
       <!-- 左侧：编辑器区域 -->
-      <div class="glass-panel editor-pane no-print">
+      <div v-show="!isPreviewOnly" class="glass-panel editor-pane no-print">
         <div class="panel-header">
           <div class="header-title-group">
             <span class="panel-title">Markdown 源码</span>
@@ -101,12 +117,31 @@
       </div>
 
       <!-- 右侧：实时预览区域 -->
-      <div class="glass-panel preview-pane">
+      <div class="glass-panel preview-pane" :class="{ 'full-preview': isPreviewOnly }">
         <div class="panel-header no-print">
-          <span class="panel-title">实时渲染视图</span>
-          <span class="preview-theme-indicator" :style="{ backgroundColor: config.backgroundColor }">
-            {{ currentThemeLabel }}
-          </span>
+          <div class="header-title-group">
+            <span class="panel-title">实时渲染视图</span>
+            <span v-if="isPreviewOnly" class="preview-mode-tag">
+              <EyeOutlined style="margin-right: 4px;" />全宽预览模式
+            </span>
+          </div>
+          <div class="header-right-group">
+            <span class="preview-theme-indicator" :style="{ backgroundColor: config.backgroundColor }">
+              {{ currentThemeLabel }}
+            </span>
+            <a-tooltip title="退出全宽，恢复双栏编辑 (Esc)">
+              <a-button
+                v-if="isPreviewOnly"
+                type="text"
+                size="small"
+                class="pane-restore-btn"
+                @click="togglePreviewOnly"
+              >
+                <template #icon><LayoutOutlined /></template>
+                恢复双栏
+              </a-button>
+            </a-tooltip>
+          </div>
         </div>
 
         <div
@@ -187,6 +222,8 @@ import {
   FolderOpenOutlined,
   CloudUploadOutlined,
   FileMarkdownOutlined,
+  EyeOutlined,
+  LayoutOutlined,
 } from "@ant-design/icons-vue";
 import { Codemirror } from "vue-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
@@ -291,12 +328,15 @@ export default {
     FolderOpenOutlined,
     CloudUploadOutlined,
     FileMarkdownOutlined,
+    EyeOutlined,
+    LayoutOutlined,
     Codemirror,
   },
   data() {
     return {
       markdownContent: "",
       htmlContent: "",
+      isPreviewOnly: false,
       extensions: [
         markdown(),
         oneDark,
@@ -364,8 +404,20 @@ export default {
   mounted() {
     this.loadConfig();
     this.initContent();
+    window.addEventListener("keydown", this.handleKeyDown);
+  },
+  beforeUnmount() {
+    window.removeEventListener("keydown", this.handleKeyDown);
   },
   methods: {
+    togglePreviewOnly() {
+      this.isPreviewOnly = !this.isPreviewOnly;
+    },
+    handleKeyDown(e) {
+      if (e.key === "Escape" && this.isPreviewOnly) {
+        this.isPreviewOnly = false;
+      }
+    },
     // --- 核心：拖拽外部文件载入并直接替换内容 ---
     handleDragEnter(e) {
       if (e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
@@ -785,6 +837,19 @@ export default {
   font-weight: 500;
 }
 
+.preview-active-btn {
+  background: rgba(0, 113, 227, 0.12) !important;
+  color: #0071e3 !important;
+  border-color: rgba(0, 113, 227, 0.35) !important;
+  font-weight: 600;
+}
+
+.preview-active-btn:hover {
+  background: rgba(0, 113, 227, 0.18) !important;
+  color: #0077ed !important;
+  border-color: rgba(0, 113, 227, 0.5) !important;
+}
+
 .export-btn {
   background: linear-gradient(180deg, #0077ed 0%, #0071e3 100%) !important;
   border: none !important;
@@ -797,6 +862,11 @@ export default {
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   overflow: hidden;
+  transition: grid-template-columns 0.3s ease;
+}
+
+.editor-layout.preview-only {
+  grid-template-columns: 1fr;
 }
 
 .glass-panel {
@@ -845,6 +915,38 @@ export default {
   background: rgba(0, 0, 0, 0.04);
   padding: 2px 8px;
   border-radius: 9999px;
+}
+
+.header-right-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-mode-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px;
+  color: #0071e3;
+  background: rgba(0, 113, 227, 0.08);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+.pane-restore-btn {
+  font-size: 12px;
+  color: #0071e3;
+  padding: 0 8px;
+  height: 24px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pane-restore-btn:hover {
+  background: rgba(0, 113, 227, 0.08);
+  color: #0077ed;
 }
 
 .preview-theme-indicator {
