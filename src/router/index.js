@@ -15,6 +15,11 @@ const routes = [
   },
   // 在这里添加新的路由
   {
+    path: "/tools/excel-transformer",
+    name: "ExcelTransformer",
+    component: () => import("../views/tools/ExcelTransformer.vue"),
+  },
+  {
     path: "/tools/nginx-formatter",
     name: "NginxFormatter",
     component: () => import("../views/tools/NginxFormatter.vue"), // 懒加载新组件

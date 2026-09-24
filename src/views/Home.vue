@@ -81,6 +81,7 @@ import {
   SearchOutlined,
   Html5Outlined,
   ApiOutlined,
+  FileExcelOutlined,
 } from "@ant-design/icons-vue";
 
 export default {
@@ -105,6 +106,13 @@ export default {
         { key: "text", label: "文本与转换", icon: "📝" },
       ],
       tools: [
+        {
+          title: "Excel 极速数据转换器",
+          description: "10秒完成 Excel 数据批处理：搜索替换、长数字防失真转纯文本、四则运算加减乘除、列数据拼接后缀、字典映射，纯本地闪电处理。",
+          to: "/tools/excel-transformer",
+          icon: FileExcelOutlined,
+          category: "text",
+        },
         {
           title: "超大 HAR 网络流深度全景诊断器",
           description: "浏览器抓包 HAR 纯本地秒级解析，结构化列式表格、各请求头/响应头深度透视、美观折叠 JSON 树、Cookie 与 Authorization Token 便捷复制。",
