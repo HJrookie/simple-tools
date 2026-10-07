@@ -76,6 +76,26 @@
           </button>
         </div>
 
+        <!-- 换行切换快捷开关 -->
+        <div class="view-mode-toggle">
+          <button
+            class="mode-btn"
+            :class="{ active: wrapLines }"
+            @click="wrapLines = true"
+            title="开启长文本自动折行，消除横向滚动条"
+          >
+            换行
+          </button>
+          <button
+            class="mode-btn"
+            :class="{ active: !wrapLines }"
+            @click="wrapLines = false"
+            title="关闭自动换行，保持单行并支持横向滚动"
+          >
+            不换行
+          </button>
+        </div>
+
         <!-- 格式化两端 JSON 按钮 -->
         <a-button @click="formatBothSidesIfJson" class="action-btn" title="检测并格式化两侧的 JSON 内容">
           <template #icon><CodeOutlined /></template>
@@ -98,6 +118,10 @@
         <a-popover placement="bottomRight" trigger="click">
           <template #content>
             <div class="settings-popover">
+              <div class="setting-item">
+                <a-switch v-model:checked="wrapLines" size="small" />
+                <span class="setting-label">长文本自动换行</span>
+              </div>
               <div class="setting-item">
                 <a-switch v-model:checked="autoFormatJson" size="small" />
                 <span class="setting-label">粘贴 / 载入时自动格式化 JSON</span>
@@ -177,6 +201,7 @@
               @scroll="handleLeftScroll"
               placeholder="请在此粘贴或输入【原始文本 / JSON】，支持拖入文件，JSON 将自动格式化..."
               class="diff-textarea"
+              :class="{ 'wrap-lines': wrapLines }"
               spellcheck="false"
             ></textarea>
 
@@ -184,6 +209,7 @@
             <div
               ref="leftHighlightRef"
               class="diff-highlight-view"
+              :class="{ 'wrap-lines': wrapLines }"
               aria-hidden="true"
             >
               <div
@@ -245,12 +271,14 @@
               @scroll="handleRightScroll"
               placeholder="请在此粘贴或输入【修改后文本 / JSON】，支持拖入文件，JSON 将自动格式化..."
               class="diff-textarea"
+              :class="{ 'wrap-lines': wrapLines }"
               spellcheck="false"
             ></textarea>
 
             <div
               ref="rightHighlightRef"
               class="diff-highlight-view"
+              :class="{ 'wrap-lines': wrapLines }"
               aria-hidden="true"
             >
               <div
@@ -283,11 +311,11 @@
           </div>
         </div>
 
-        <div class="unified-diff-body">
+        <div class="unified-diff-body" :class="{ 'wrap-lines': wrapLines }">
           <div v-if="!leftText && !rightText" class="empty-diff-hint">
             请在上方切换为双栏模式输入文本，或使用示例进行对比
           </div>
-          <div v-else class="unified-lines-list">
+          <div v-else class="unified-lines-list" :class="{ 'wrap-lines': wrapLines }">
             <div
               v-for="(item, idx) in unifiedDiffResult"
               :key="idx"
@@ -367,11 +395,20 @@ export default {
     CodeOutlined,
   },
   data() {
+    let initialWrap = true;
+    try {
+      const stored = localStorage.getItem("diff_wrap_lines");
+      if (stored !== null) {
+        initialWrap = stored === "true";
+      }
+    } catch (e) {}
+
     return {
       leftText: sampleOriginal,
       rightText: sampleModified,
       viewMode: "split", // 'split' | 'unified'
       diffGranularity: "lines", // 'lines' | 'words' | 'chars'
+      wrapLines: initialWrap, // 是否开启长文本自动折行
       autoFormatJson: true, // 默认开启 JSON 自动格式化
       ignoreWhitespace: false,
       ignoreCase: false,
@@ -380,6 +417,13 @@ export default {
       rightDragging: false,
       isScrolling: false,
     };
+  },
+  watch: {
+    wrapLines(val) {
+      try {
+        localStorage.setItem("diff_wrap_lines", String(val));
+      } catch (e) {}
+    },
   },
   computed: {
     leftStats() {
@@ -1199,6 +1243,14 @@ export default {
   background: transparent;
   color: #1d1d1f;
   tab-size: 2;
+  box-sizing: border-box;
+}
+
+.diff-textarea.wrap-lines {
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  overflow-x: hidden;
 }
 
 .diff-highlight-view {
@@ -1212,12 +1264,20 @@ export default {
   z-index: 1;
   pointer-events: none;
   user-select: none;
+  box-sizing: border-box;
 }
 
 .diff-line-row {
   display: flex;
   min-height: 22px;
   white-space: pre;
+  box-sizing: border-box;
+}
+
+.diff-highlight-view.wrap-lines .diff-line-row {
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .line-gutter {
@@ -1230,12 +1290,27 @@ export default {
   user-select: none;
   background: rgba(0, 0, 0, 0.02);
   border-right: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding-top: 1px;
+  box-sizing: border-box;
 }
 
 .line-content {
   flex: 1;
+  min-width: 0;
   padding-left: 6px;
+  padding-right: 14px;
   color: transparent;
+  box-sizing: border-box;
+}
+
+.diff-highlight-view.wrap-lines .line-content {
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 /* 行级颜色 */
@@ -1273,6 +1348,8 @@ export default {
   border-radius: 3px;
   padding: 1px 2px;
   color: transparent;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 :deep(.diff-word-added) {
@@ -1280,6 +1357,8 @@ export default {
   border-radius: 3px;
   padding: 1px 2px;
   color: transparent;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 /* 视图 B: Unified 合并视图 */
@@ -1315,6 +1394,10 @@ export default {
   line-height: 22px;
 }
 
+.unified-diff-body.wrap-lines {
+  overflow-x: hidden;
+}
+
 .empty-diff-hint {
   display: flex;
   align-items: center;
@@ -1329,6 +1412,11 @@ export default {
   align-items: center;
   min-height: 22px;
   white-space: pre;
+}
+
+.unified-lines-list.wrap-lines .unified-line-row {
+  min-height: 22px;
+  align-items: stretch;
 }
 
 .unified-line-row.unified-added {
@@ -1349,6 +1437,11 @@ export default {
   user-select: none;
 }
 
+.unified-lines-list.wrap-lines .line-num {
+  align-self: flex-start;
+  padding-top: 1px;
+}
+
 .unified-line-row.unified-added .new-num {
   color: #4ade80;
 }
@@ -1364,6 +1457,11 @@ export default {
   user-select: none;
 }
 
+.unified-lines-list.wrap-lines .line-prefix {
+  align-self: flex-start;
+  padding-top: 1px;
+}
+
 .unified-added .line-prefix { color: #4ade80; }
 .unified-removed .line-prefix { color: #f87171; }
 .unified-same .line-prefix { color: #64748b; }
@@ -1372,6 +1470,12 @@ export default {
   flex: 1;
   padding-left: 4px;
   color: #f8fafc;
+}
+
+.unified-lines-list.wrap-lines .line-code {
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .unified-added .line-code { color: #bbf7d0; }

@@ -241,7 +241,7 @@ export default {
         },
         {
           title: "文本对比工具",
-          description: "本地多模式文本差异对比，双栏分屏与词级精细颜色高亮。",
+          description: "compare-本地多模式文本差异对比，双栏分屏与词级精细颜色高亮。",
           to: "/tools/text-compare",
           icon: SplitCellsOutlined,
           category: "text",
