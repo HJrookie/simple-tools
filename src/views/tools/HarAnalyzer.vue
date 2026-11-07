@@ -20,6 +20,10 @@
       <div class="header-right">
         <template v-if="hasData">
           <a-space>
+            <a-button type="primary" class="export-nav-btn" @click="openExportModal">
+              <template #icon><DownloadOutlined /></template>
+              抽离与导出请求 ({{ filteredEntries.length }})
+            </a-button>
             <a-upload :before-upload="handleFileUpload" :show-upload-list="false" accept=".har,.json">
               <a-button type="default">
                 <template #icon><UploadOutlined /></template>
@@ -137,6 +141,47 @@
             </template>
           </a-input>
 
+          <!-- Method 请求方法过滤胶囊 -->
+          <div class="filter-pills method-pills">
+            <span
+              class="pill"
+              :class="{ active: methodFilter === 'all' }"
+              @click="methodFilter = 'all'"
+            >
+              全部方法
+            </span>
+            <span
+              class="pill pill-method-get"
+              :class="{ active: methodFilter === 'GET' }"
+              @click="methodFilter = 'GET'"
+            >
+              GET <small v-if="stats.methodCounts && stats.methodCounts.GET">({{ stats.methodCounts.GET }})</small>
+            </span>
+            <span
+              class="pill pill-method-post"
+              :class="{ active: methodFilter === 'POST' }"
+              @click="methodFilter = 'POST'"
+            >
+              POST <small v-if="stats.methodCounts && stats.methodCounts.POST">({{ stats.methodCounts.POST }})</small>
+            </span>
+            <span
+              class="pill pill-method-put"
+              :class="{ active: methodFilter === 'PUT' }"
+              @click="methodFilter = 'PUT'"
+              v-if="stats.methodCounts && stats.methodCounts.PUT"
+            >
+              PUT <small>({{ stats.methodCounts.PUT }})</small>
+            </span>
+            <span
+              class="pill pill-method-delete"
+              :class="{ active: methodFilter === 'DELETE' }"
+              @click="methodFilter = 'DELETE'"
+              v-if="stats.methodCounts && stats.methodCounts.DELETE"
+            >
+              DELETE <small>({{ stats.methodCounts.DELETE }})</small>
+            </span>
+          </div>
+
           <!-- 状态分类胶囊 -->
           <div class="filter-pills status-pills">
             <span
@@ -144,7 +189,7 @@
               :class="{ active: statusFilter === 'all' }"
               @click="statusFilter = 'all'"
             >
-              全部 ({{ stats.totalRequests }})
+              全部状态 ({{ stats.totalRequests }})
             </span>
             <span
               class="pill pill-success"
@@ -185,6 +230,14 @@
         </div>
 
         <div class="filter-right">
+          <!-- 勾选批量操作提示 -->
+          <div v-if="selectedRowKeys.length > 0" class="selection-actions-box">
+            <span class="sel-tag">已勾选 <b>{{ selectedRowKeys.length }}</b> 项</span>
+            <a-button size="small" type="link" @click="selectedRowKeys = []">清空</a-button>
+            <a-button size="small" type="primary" ghost @click="openExportModalWithScope('selected')">
+              <DownloadOutlined /> 导出已选
+            </a-button>
+          </div>
           <a-checkbox v-model:checked="onlyErrors">仅看 4xx/5xx 异常</a-checkbox>
           <a-checkbox v-model:checked="onlySlow">仅看慢接口 (>1s)</a-checkbox>
           <span class="match-count">显示 {{ filteredEntries.length }} / {{ entries.length }} 条</span>
@@ -199,6 +252,7 @@
             :dataSource="filteredEntries"
             :columns="tableColumns"
             :pagination="tablePagination"
+            :row-selection="rowSelection"
             rowKey="id"
             size="small"
             :scroll="{ x: 1000, y: 'calc(100vh - 280px)' }"
@@ -317,6 +371,11 @@
           </div>
 
           <div class="dh-right">
+            <!-- 抽离导出此请求 -->
+            <a-button size="small" type="primary" ghost @click="exportSingleEntry(selectedEntry)" title="下载此接口的参数与返回值 (JSON)">
+              <template #icon><DownloadOutlined /></template> 抽离导出
+            </a-button>
+
             <!-- 上一个/下一个切换 -->
             <a-button-group size="small">
               <a-button :disabled="selectedEntryIndex <= 0" @click="navigateEntry(-1)">
@@ -341,6 +400,9 @@
           </a-button>
           <a-button size="small" type="link" @click="copyAsCurl(selectedEntry)">
             <CodeOutlined /> 复制 cURL
+          </a-button>
+          <a-button size="small" type="link" @click="copySingleEntryExtracted(selectedEntry)">
+            <CopyOutlined /> 复制参数与返回值
           </a-button>
         </div>
 
@@ -689,6 +751,183 @@
         </div>
       </div>
     </a-drawer>
+
+    <!-- 5. 核心抽离与导出请求配置模态框 -->
+    <a-modal
+      :open="exportModalVisible"
+      title="抽离与导出请求数据 (URL / 参数 / 返回值)"
+      width="860px"
+      :footer="null"
+      :destroyOnClose="false"
+      class="har-export-modal"
+      centered
+      @cancel="exportModalVisible = false"
+    >
+      <div class="modal-export-content">
+        <!-- 统计指引 Banner -->
+        <div class="export-summary-banner">
+          <div class="banner-icon">
+            <ApiOutlined />
+          </div>
+          <div class="banner-info">
+            <div class="banner-title">
+              准备抽离 <strong>{{ exportTargetEntries.length }}</strong> 条请求的核心参数与返回值
+            </div>
+            <div class="banner-desc">
+              自动过滤 HAR 冗余协议头，将 URL、Query 参数、POST 载荷及 Response 响应结果转换为清爽易用的结构化数据集
+            </div>
+          </div>
+        </div>
+
+        <div class="export-options-grid">
+          <!-- 1. 导出范围 -->
+          <div class="option-group">
+            <div class="group-title">1. 导出范围 (Scope)</div>
+            <a-radio-group v-model:value="exportConfig.scope" button-style="solid" class="scope-radio-group">
+              <a-radio-button value="filtered">
+                当前筛选结果 ({{ filteredEntries.length }} 条)
+              </a-radio-button>
+              <a-radio-button value="selected" :disabled="selectedRowKeys.length === 0">
+                表格手动勾选 ({{ selectedRowKeys.length }} 条)
+              </a-radio-button>
+              <a-radio-button value="all">
+                全部请求 ({{ entries.length }} 条)
+              </a-radio-button>
+            </a-radio-group>
+          </div>
+
+          <!-- 2. 二次过滤控制 -->
+          <div class="option-group">
+            <div class="group-title">2. 针对性过滤规则 (Filter)</div>
+            <div class="filter-controls-inline">
+              <div class="ctrl-item">
+                <span class="ctrl-label">请求方式:</span>
+                <a-select v-model:value="exportConfig.overrideMethod" style="width: 140px" size="small">
+                  <a-select-option value="all">全部 Method</a-select-option>
+                  <a-select-option value="GET">仅 GET</a-select-option>
+                  <a-select-option value="POST">仅 POST</a-select-option>
+                  <a-select-option value="PUT">仅 PUT</a-select-option>
+                  <a-select-option value="DELETE">仅 DELETE</a-select-option>
+                  <a-select-option value="PATCH">仅 PATCH</a-select-option>
+                </a-select>
+              </div>
+
+              <div class="ctrl-item">
+                <span class="ctrl-label">URL 包含:</span>
+                <a-input
+                  v-model:value="exportConfig.urlKeyword"
+                  placeholder="过滤特定 URL 或路径..."
+                  size="small"
+                  allow-clear
+                  style="width: 220px"
+                />
+              </div>
+
+              <div class="ctrl-item">
+                <a-checkbox v-model:checked="exportConfig.onlyApi">
+                  仅包含数据接口 (fetch / xhr / JSON)
+                </a-checkbox>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 导出格式选择 -->
+          <div class="option-group">
+            <div class="group-title">3. 导出文件格式 (Format)</div>
+            <div class="format-cards-grid">
+              <div
+                class="format-card"
+                :class="{ active: exportConfig.format === 'json' }"
+                @click="exportConfig.format = 'json'"
+              >
+                <div class="fc-badge">推荐</div>
+                <div class="fc-title">💎 抽离数据 JSON (.json)</div>
+                <div class="fc-desc">URL、Query参数、POST主体与Response结果结构化提取</div>
+              </div>
+
+              <div
+                class="format-card"
+                :class="{ active: exportConfig.format === 'csv' }"
+                @click="exportConfig.format = 'csv'"
+              >
+                <div class="fc-title">📊 数据表格 CSV (.csv)</div>
+                <div class="fc-desc">带 UTF-8 BOM，Excel 直接双击打开，多列分明呈现实参返回值</div>
+              </div>
+
+              <div
+                class="format-card"
+                :class="{ active: exportConfig.format === 'markdown' }"
+                @click="exportConfig.format = 'markdown'"
+              >
+                <div class="fc-title">📝 接口文档 Markdown (.md)</div>
+                <div class="fc-desc">自动排版接口清单、请求参数与响应代码块</div>
+              </div>
+
+              <div
+                class="format-card"
+                :class="{ active: exportConfig.format === 'har' }"
+                @click="exportConfig.format = 'har'"
+              >
+                <div class="fc-title">📦 过滤后 HAR (.har)</div>
+                <div class="fc-desc">保留过滤后条目的标准 HAR 抓包，可导回其他抓包工具</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. 抽离选项细节 -->
+          <div class="option-group" v-if="exportConfig.format !== 'har'">
+            <div class="group-title">4. 抽离内容选项</div>
+            <div class="checkbox-row">
+              <a-checkbox v-model:checked="exportConfig.parseJson">
+                自动解析 JSON (将 JSON 字符串直接转为对象，无多余转义)
+              </a-checkbox>
+              <a-checkbox v-model:checked="exportConfig.includeHeaders">
+                附带请求标头与响应标头 (Headers)
+              </a-checkbox>
+              <a-checkbox v-model:checked="exportConfig.includeTimings">
+                附带网络耗时 (Timings)
+              </a-checkbox>
+              <a-checkbox v-if="exportConfig.format === 'json'" v-model:checked="exportConfig.asArrayOnly">
+                仅输出请求纯数组 (无需 meta 包装对象)
+              </a-checkbox>
+            </div>
+          </div>
+
+          <!-- 5. 实时数据样例预览 -->
+          <div class="option-group">
+            <div class="preview-header-line">
+              <span class="group-title">5. 抽离数据样例预览 (首条匹配项)</span>
+              <span class="preview-count-tag">预计导出 {{ exportTargetEntries.length }} 项</span>
+            </div>
+            <div class="preview-code-box">
+              <pre class="preview-code-pre"><code>{{ exportPreviewJson }}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- 弹窗底部操作栏 -->
+        <div class="modal-footer-actions">
+          <div class="mfa-left">
+            <span class="mfa-hint">
+              匹配 <b>{{ exportTargetEntries.length }}</b> 条请求 · 100% 浏览器本地生成
+            </span>
+          </div>
+          <div class="mfa-right">
+            <a-button @click="copyExportData" :disabled="exportTargetEntries.length === 0">
+              <template #icon><CopyOutlined /></template> 复制数据到剪贴板
+            </a-button>
+            <a-button
+              type="primary"
+              @click="doExport"
+              :disabled="exportTargetEntries.length === 0"
+              class="confirm-export-btn"
+            >
+              <template #icon><DownloadOutlined /></template> 立即下载导出文件
+            </a-button>
+          </div>
+        </div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
@@ -705,6 +944,8 @@ import {
   Tooltip,
   Checkbox,
   Space,
+  Modal,
+  Select,
   message,
 } from "ant-design-vue";
 
@@ -723,10 +964,21 @@ import {
   SafetyCertificateOutlined,
   LeftOutlined,
   RightOutlined,
+  ExportOutlined,
+  FilterOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons-vue";
 
 import JsonTreeView from "../../components/har/JsonTreeView.vue";
 import { parseHarData, generateSampleHar } from "../../utils/har/harParser.js";
+import {
+  extractEntryData,
+  generateExtractedJson,
+  generateExtractedCsv,
+  generateExtractedMarkdown,
+  generateFilteredHar,
+  downloadFile,
+} from "../../utils/har/harExporter.js";
 
 export default {
   name: "HarAnalyzer",
@@ -746,6 +998,9 @@ export default {
     "a-tooltip": Tooltip,
     "a-checkbox": Checkbox,
     "a-space": Space,
+    "a-modal": Modal,
+    "a-select": Select,
+    "a-select-option": Select.Option,
     UploadOutlined,
     DeleteOutlined,
     InboxOutlined,
@@ -760,11 +1015,15 @@ export default {
     SafetyCertificateOutlined,
     LeftOutlined,
     RightOutlined,
+    ExportOutlined,
+    FilterOutlined,
+    CheckCircleOutlined,
   },
   data() {
     return {
       hasData: false,
       entries: [],
+      rawHar: null,
       stats: {
         totalRequests: 0,
         totalSize: 0,
@@ -773,14 +1032,18 @@ export default {
         slowCount: 0,
         statusCounts: { "2xx": 0, "3xx": 0, "4xx": 0, "5xx": 0, other: 0 },
         typeCounts: {},
+        methodCounts: {},
         uniqueHosts: 0,
       },
       // 筛选条件
       searchQuery: "",
+      methodFilter: "all",
       statusFilter: "all",
       typeFilter: "all",
       onlyErrors: false,
       onlySlow: false,
+      // 表格勾选
+      selectedRowKeys: [],
       // 表格分页
       tablePagination: {
         current: 1,
@@ -795,6 +1058,19 @@ export default {
       activeDetailTab: "headers",
       responseViewMode: "tree", // 'tree' | 'formatted' | 'raw' | 'image'
       headerSearchQuery: "",
+      // 抽离导出弹窗控制
+      exportModalVisible: false,
+      exportConfig: {
+        scope: "filtered", // 'filtered' | 'selected' | 'all'
+        format: "json", // 'json' | 'csv' | 'markdown' | 'har'
+        onlyApi: true,
+        overrideMethod: "all",
+        urlKeyword: "",
+        parseJson: true,
+        includeHeaders: false,
+        includeTimings: false,
+        asArrayOnly: false,
+      },
       // 列定义
       tableColumns: [
         { title: "状态", key: "status", width: 90, fixed: "left" },
@@ -813,6 +1089,14 @@ export default {
       const types = ["all", "fetch/xhr", "js", "css", "img", "doc", "other"];
       return types;
     },
+    rowSelection() {
+      return {
+        selectedRowKeys: this.selectedRowKeys,
+        onChange: (keys) => {
+          this.selectedRowKeys = keys;
+        },
+      };
+    },
     filteredEntries() {
       let list = this.entries;
       const q = this.searchQuery.trim().toLowerCase();
@@ -829,6 +1113,11 @@ export default {
             item.resourceType.toLowerCase().includes(q)
           );
         });
+      }
+
+      // HTTP Method 筛选
+      if (this.methodFilter !== "all") {
+        list = list.filter((i) => i.method.toUpperCase() === this.methodFilter.toUpperCase());
       }
 
       // 状态码筛选
@@ -854,6 +1143,60 @@ export default {
       }
 
       return list;
+    },
+    exportTargetEntries() {
+      let list = [];
+      if (this.exportConfig.scope === "selected") {
+        const set = new Set(this.selectedRowKeys);
+        list = this.entries.filter((i) => set.has(i.id));
+        if (list.length === 0) list = this.filteredEntries;
+      } else if (this.exportConfig.scope === "all") {
+        list = this.entries;
+      } else {
+        // 'filtered'
+        list = this.filteredEntries;
+      }
+
+      // 二次条件过滤：仅数据接口 (fetch / xhr / JSON)
+      if (this.exportConfig.onlyApi) {
+        list = list.filter((i) => {
+          return (
+            i.resourceType === "fetch/xhr" ||
+            i.responseContent.isJson ||
+            Boolean(i.postData) ||
+            i.queryString.length > 0
+          );
+        });
+      }
+
+      // 二次条件过滤：Method 指定
+      if (this.exportConfig.overrideMethod !== "all") {
+        list = list.filter(
+          (i) => i.method.toUpperCase() === this.exportConfig.overrideMethod.toUpperCase()
+        );
+      }
+
+      // 二次条件过滤：URL 关键词
+      const kw = (this.exportConfig.urlKeyword || "").trim().toLowerCase();
+      if (kw) {
+        list = list.filter(
+          (i) => i.url.toLowerCase().includes(kw) || i.path.toLowerCase().includes(kw)
+        );
+      }
+
+      return list;
+    },
+    exportPreviewJson() {
+      const targets = this.exportTargetEntries;
+      if (targets.length === 0) {
+        return "// 当前筛选过滤规则下暂无匹配请求";
+      }
+      const sample = extractEntryData(targets[0], {
+        includeHeaders: this.exportConfig.includeHeaders,
+        includeTimings: this.exportConfig.includeTimings,
+        parseJson: this.exportConfig.parseJson,
+      });
+      return JSON.stringify(sample, null, 2);
     },
     selectedEntry() {
       if (!this.selectedEntryId) return null;
@@ -895,7 +1238,9 @@ export default {
           const parsed = parseHarData(json);
           this.entries = parsed.entries;
           this.stats = parsed.stats;
+          this.rawHar = parsed.rawHar || json;
           this.hasData = true;
+          this.selectedRowKeys = [];
           this.selectedEntryId = null;
           this.drawerVisible = false;
           message.success(`成功载入 ${this.entries.length} 个网络请求`);
@@ -911,7 +1256,9 @@ export default {
       const parsed = parseHarData(demoHar);
       this.entries = parsed.entries;
       this.stats = parsed.stats;
+      this.rawHar = parsed.rawHar || demoHar;
       this.hasData = true;
+      this.selectedRowKeys = [];
       // 默认选中第一个演示项并打开
       if (this.entries.length > 0) {
         this.selectEntry(this.entries[0]);
@@ -921,9 +1268,12 @@ export default {
     clearData() {
       this.hasData = false;
       this.entries = [];
+      this.rawHar = null;
+      this.selectedRowKeys = [];
       this.selectedEntryId = null;
       this.drawerVisible = false;
       this.searchQuery = "";
+      this.methodFilter = "all";
       this.statusFilter = "all";
       this.typeFilter = "all";
       this.onlyErrors = false;
@@ -932,7 +1282,15 @@ export default {
     },
     customRowHandler(record) {
       return {
-        onClick: () => {
+        onClick: (e) => {
+          if (
+            e &&
+            e.target &&
+            (e.target.closest(".ant-checkbox-wrapper") ||
+              e.target.closest(".ant-table-selection-column"))
+          ) {
+            return;
+          }
           this.selectEntry(record);
         },
       };
@@ -966,6 +1324,112 @@ export default {
     },
     toggleOnlySlow() {
       this.onlySlow = !this.onlySlow;
+    },
+    openExportModal() {
+      this.exportConfig.scope = this.selectedRowKeys.length > 0 ? "selected" : "filtered";
+      this.exportConfig.overrideMethod = this.methodFilter !== "all" ? this.methodFilter : "all";
+      this.exportConfig.urlKeyword = "";
+      this.exportModalVisible = true;
+    },
+    openExportModalWithScope(scope) {
+      this.exportConfig.scope = scope;
+      this.exportConfig.overrideMethod = this.methodFilter !== "all" ? this.methodFilter : "all";
+      this.exportConfig.urlKeyword = "";
+      this.exportModalVisible = true;
+    },
+    doExport() {
+      const targets = this.exportTargetEntries;
+      if (targets.length === 0) {
+        message.warning("当前没有匹配的可导出请求");
+        return;
+      }
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const scopeDesc =
+        this.exportConfig.overrideMethod !== "all"
+          ? this.exportConfig.overrideMethod
+          : this.methodFilter !== "all"
+          ? this.methodFilter
+          : "requests";
+      const filenameBase = `har_extracted_${scopeDesc}_${targets.length}_${timestamp}`;
+
+      const options = {
+        includeHeaders: this.exportConfig.includeHeaders,
+        includeTimings: this.exportConfig.includeTimings,
+        parseJson: this.exportConfig.parseJson,
+        asArrayOnly: this.exportConfig.asArrayOnly,
+        filterSummary: `范围: ${this.exportConfig.scope}, Method: ${
+          this.exportConfig.overrideMethod !== "all" ? this.exportConfig.overrideMethod : this.methodFilter
+        }, 仅数据接口: ${this.exportConfig.onlyApi ? "是" : "否"}`,
+      };
+
+      try {
+        if (this.exportConfig.format === "json") {
+          const content = generateExtractedJson(targets, options);
+          downloadFile(content, `${filenameBase}.json`, "application/json;charset=utf-8");
+          message.success(`已导出 ${targets.length} 条请求抽离参数与响应 (JSON)`);
+        } else if (this.exportConfig.format === "csv") {
+          const content = generateExtractedCsv(targets, options);
+          downloadFile(content, `${filenameBase}.csv`, "text/csv;charset=utf-8");
+          message.success(`已导出 ${targets.length} 条请求数据清单 (CSV/Excel)`);
+        } else if (this.exportConfig.format === "markdown") {
+          const content = generateExtractedMarkdown(targets, options);
+          downloadFile(content, `${filenameBase}.md`, "text/markdown;charset=utf-8");
+          message.success(`已导出 ${targets.length} 条请求 API 接口文档 (Markdown)`);
+        } else if (this.exportConfig.format === "har") {
+          const content = generateFilteredHar(this.rawHar, targets);
+          downloadFile(content, `${filenameBase}.har`, "application/json;charset=utf-8");
+          message.success(`已导出 ${targets.length} 条过滤后的 HAR 文件`);
+        }
+        this.exportModalVisible = false;
+      } catch (err) {
+        message.error("导出失败：" + err.message);
+      }
+    },
+    copyExportData() {
+      const targets = this.exportTargetEntries;
+      if (targets.length === 0) {
+        message.warning("当前没有匹配的可导出请求");
+        return;
+      }
+      const options = {
+        includeHeaders: this.exportConfig.includeHeaders,
+        includeTimings: this.exportConfig.includeTimings,
+        parseJson: this.exportConfig.parseJson,
+        asArrayOnly: this.exportConfig.asArrayOnly,
+      };
+      let text = "";
+      if (this.exportConfig.format === "json") {
+        text = generateExtractedJson(targets, options);
+      } else if (this.exportConfig.format === "csv") {
+        text = generateExtractedCsv(targets, options);
+      } else if (this.exportConfig.format === "markdown") {
+        text = generateExtractedMarkdown(targets, options);
+      } else {
+        text = generateFilteredHar(this.rawHar, targets);
+      }
+      this.copyText(text, `已复制 ${targets.length} 条请求的抽离数据到剪贴板`);
+    },
+    exportSingleEntry(entry) {
+      if (!entry) return;
+      const data = extractEntryData(entry, {
+        includeHeaders: true,
+        includeTimings: true,
+        parseJson: true,
+      });
+      const json = JSON.stringify(data, null, 2);
+      const safeName = (entry.pathname || "request").replace(/[^a-zA-Z0-9_-]/g, "_").slice(-30);
+      downloadFile(json, `api_${entry.method}_${safeName}.json`, "application/json;charset=utf-8");
+      message.success(`已导出接口 [${entry.method}] ${entry.pathname} 的参数与返回值`);
+    },
+    copySingleEntryExtracted(entry) {
+      if (!entry) return;
+      const data = extractEntryData(entry, {
+        includeHeaders: true,
+        includeTimings: true,
+        parseJson: true,
+      });
+      this.copyText(JSON.stringify(data, null, 2), "已复制该接口的参数与返回值");
     },
     getWaterfallWidth(partMs, totalMs) {
       if (!totalMs || totalMs <= 0 || !partMs || partMs <= 0) return "0%";
@@ -2097,4 +2561,282 @@ export default {
 .dot-connect { background: #f59e0b; }
 .dot-wait { background: #38bdf8; }
 .dot-receive { background: #34d399; }
+
+/* 顶部与操作栏增强 */
+.export-nav-btn {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}
+
+.export-nav-btn:hover {
+  background: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+}
+
+/* Method 过滤胶囊 */
+.pill-method-get.active {
+  background: #15803d !important;
+  border-color: #166534 !important;
+}
+
+.pill-method-post.active {
+  background: #1d4ed8 !important;
+  border-color: #1e40af !important;
+}
+
+.pill-method-put.active {
+  background: #b45309 !important;
+  border-color: #92400e !important;
+}
+
+.pill-method-delete.active {
+  background: #b91c1c !important;
+  border-color: #991b1b !important;
+}
+
+/* 勾选操作栏 */
+.selection-actions-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.sel-tag {
+  font-size: 12px;
+  color: #1e40af;
+}
+
+/* 抽离与导出模态框样式 */
+.modal-export-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.export-summary-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.banner-icon {
+  font-size: 24px;
+  color: #2563eb;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.banner-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin-bottom: 2px;
+}
+
+.banner-title strong {
+  color: #2563eb;
+  font-size: 16px;
+}
+
+.banner-desc {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.export-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.group-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.scope-radio-group {
+  display: flex;
+  width: 100%;
+}
+
+.scope-radio-group :deep(.ant-radio-button-wrapper) {
+  flex: 1;
+  text-align: center;
+}
+
+.filter-controls-inline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #f8fafc;
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.ctrl-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ctrl-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+/* 导出格式卡片 */
+.format-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.format-card {
+  position: relative;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.format-card:hover {
+  border-color: #93c5fd;
+  background: #f8fafc;
+}
+
+.format-card.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+}
+
+.fc-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.fc-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.format-card.active .fc-title {
+  color: #1d4ed8;
+}
+
+.fc-desc {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* 复选框行 */
+.checkbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  background: #f8fafc;
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+/* 预览区 */
+.preview-header-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.preview-count-tag {
+  font-size: 12px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.preview-code-box {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 12px 14px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #1e293b;
+}
+
+.preview-code-pre {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #38bdf8;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* 弹窗底部栏 */
+.modal-footer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 4px;
+}
+
+.mfa-hint {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.mfa-hint b {
+  color: #2563eb;
+}
+
+.mfa-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.confirm-export-btn {
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}
 </style>

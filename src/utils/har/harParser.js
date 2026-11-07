@@ -299,6 +299,7 @@ export function processEntry(entry, index) {
       receive: receiveTime,
       total: duration,
     },
+    _raw: entry,
   };
 }
 
@@ -321,6 +322,7 @@ export function parseHarData(harJson) {
   let slowCount = 0;
   const statusCounts = { "2xx": 0, "3xx": 0, "4xx": 0, "5xx": 0, other: 0 };
   const typeCounts = {};
+  const methodCounts = {};
   const hostSet = new Set();
 
   for (const item of entries) {
@@ -328,6 +330,10 @@ export function parseHarData(harJson) {
     if (item.isError) errorCount++;
     if (item.isSlow) slowCount++;
     if (item.host) hostSet.add(item.host);
+
+    // Method 统计
+    const m = (item.method || "OTHER").toUpperCase();
+    methodCounts[m] = (methodCounts[m] || 0) + 1;
 
     // 状态码统计
     if (item.status >= 200 && item.status < 300) statusCounts["2xx"]++;
@@ -341,6 +347,7 @@ export function parseHarData(harJson) {
   }
 
   return {
+    rawHar: harJson,
     meta: {
       creator: log.creator || { name: "Unknown", version: "1.0" },
       browser: log.browser || null,
@@ -355,6 +362,7 @@ export function parseHarData(harJson) {
       slowCount,
       statusCounts,
       typeCounts,
+      methodCounts,
       uniqueHosts: hostSet.size,
       hostList: Array.from(hostSet),
     },
