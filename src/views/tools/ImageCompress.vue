@@ -382,7 +382,7 @@ export default {
       else if (type === "image/png") ext = "png";
       else if (type === "image/webp") ext = "webp";
 
-      saveAs(record.compressedBlob, `min_${record.name.replace(/\.[^/.]+$/, "")}.${ext}`);
+      saveAs(record.compressedBlob, `${record.name.replace(/\.[^/.]+$/, "")}.${ext}`);
     },
 
     async downloadAll() {
@@ -395,7 +395,7 @@ export default {
           else if (type === "image/png") ext = "png";
           else if (type === "image/webp") ext = "webp";
 
-          zip.file(`min_${f.name.replace(/\.[^/.]+$/, "")}.${ext}`, f.compressedBlob);
+          zip.file(`${f.name.replace(/\.[^/.]+$/, "")}.${ext}`, f.compressedBlob);
         }
       });
       const content = await zip.generateAsync({ type: "blob" });
