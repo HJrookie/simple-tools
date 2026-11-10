@@ -77,14 +77,6 @@
                   </span>
                 </div>
               </div>
-
-              <!-- 算法保障提示 Banner (紧凑小号) -->
-              <div class="engine-tip-banner">
-                <thunderbolt-outlined class="et-icon" />
-                <div class="et-content">
-                  <b>自适应双维度平衡引擎</b>：WebP 高压缩算法协同分辨率调节，严格确保文件 <strong>≤ {{ targetKB }} KB</strong>。即便几兆超大原图也会智能协调长宽与色彩码率，<strong>彻底突破传统 JPG / PNG 压不到 100KB 或严重马赛克的困境</strong>！
-                </div>
-              </div>
             </div>
 
             <!-- B. 指定清晰度 (不限制大小) -->
@@ -150,7 +142,7 @@
       </div>
     </div>
 
-    <!-- 超大拖拽上传区域：无数据时为大尺寸主操作区，有数据时为宽幅追加区 -->
+    <!-- 超大拖拽上传区域 -->
     <div class="upload-area" :class="{ 'upload-area-compact': fileList.length > 0 }">
       <a-upload-dragger
         name="file"
@@ -160,7 +152,7 @@
         accept="image/*"
         class="custom-dragger"
       >
-        <!-- 状态 1：尚未添加图片，呈现大面积、宽广、易拖入的沉浸式感应大屏 -->
+        <!-- 状态 1：尚未添加图片 -->
         <template v-if="fileList.length === 0">
           <div class="dragger-full-box">
             <p class="ant-upload-drag-icon"><inbox-outlined /></p>
@@ -177,7 +169,7 @@
           </div>
         </template>
 
-        <!-- 状态 2：已有图片，转为宽幅扁平追加栏，不挤占表格滚动的垂直视口 -->
+        <!-- 状态 2：已有图片，转为宽幅扁平追加栏 -->
         <template v-else>
           <div class="dragger-compact-box">
             <inbox-outlined class="compact-icon" />
@@ -188,7 +180,7 @@
       </a-upload-dragger>
     </div>
 
-    <!-- 结果列表 (图片多时优化：固定表头、吸顶控制栏、表格内独立流畅滚动) -->
+    <!-- 结果列表 -->
     <div class="file-list" v-if="fileList.length > 0">
       <!-- 吸顶控制栏 -->
       <div class="list-header">
@@ -211,7 +203,7 @@
         </div>
       </div>
 
-      <!-- 表格：固定表头，限制纵向滚动高度，支持紧凑分页 -->
+      <!-- 表格：固定表头，限制纵向滚动高度 -->
       <div class="table-scroll-wrapper">
         <a-table
           :columns="columns"
@@ -290,73 +282,6 @@
           </template>
         </a-table>
       </div>
-    </div>
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'thumbnail'">
-            <img :src="record.preview" class="table-thumb" @click="openCompareModal(record)" title="点击查看画质对比" />
-          </template>
-
-          <template v-if="column.key === 'originalInfo'">
-            <div class="info-cell">
-              <span class="size-text">{{ record.originalSizeStr }}</span>
-              <span class="dim-text" v-if="record.originalWidth">
-                {{ record.originalWidth }} × {{ record.originalHeight }}
-              </span>
-            </div>
-          </template>
-
-          <template v-if="column.key === 'status'">
-            <a-tag v-if="record.status === 'processing'" color="blue"><loading-outlined /> 正在平衡压缩...</a-tag>
-            <a-tag v-else-if="record.status === 'done'" color="success">压缩完成</a-tag>
-            <a-tag v-else-if="record.status === 'error'" color="error">处理失败</a-tag>
-            <a-tag v-else color="default">排队等待中</a-tag>
-          </template>
-
-          <template v-if="column.key === 'compressedInfo'">
-            <div v-if="record.status === 'done'" class="info-cell">
-              <div class="result-size-line">
-                <span class="compressed-size-val">{{ formatSize(record.compressedSize) }}</span>
-                <a-tag color="cyan" class="format-tag">{{ formatMimeName(record.actualFormat) }}</a-tag>
-              </div>
-              <span class="dim-text" v-if="record.compressedWidth">
-                {{ record.compressedWidth }} × {{ record.compressedHeight }}
-              </span>
-            </div>
-            <span v-else>-</span>
-          </template>
-
-          <template v-if="column.key === 'compressRate'">
-            <div v-if="record.status === 'done'">
-              <div :class="record.compressRate > 0 ? 'green-text' : 'red-text'">
-                {{ record.compressRate > 0 ? "-" : "+" }}{{ Math.abs(record.compressRate) }}%
-              </div>
-            </div>
-            <span v-else>-</span>
-          </template>
-
-          <template v-if="column.key === 'action'">
-            <a-space size="small">
-              <a-button
-                type="link"
-                size="small"
-                :disabled="record.status !== 'done'"
-                @click="openCompareModal(record)"
-              >
-                <eye-outlined /> 画质对比
-              </a-button>
-              <a-button
-                type="primary"
-                size="small"
-                ghost
-                :disabled="record.status !== 'done'"
-                @click="downloadOne(record)"
-              >
-                <download-outlined /> 下载
-              </a-button>
-            </a-space>
-          </template>
-        </template>
-      </a-table>
     </div>
 
     <!-- 画质细节与显示效果对比弹窗 -->
@@ -473,12 +398,12 @@ export default {
       smartLevel: "balanced", // small, balanced, high
 
       // 自定义模式参数
-      customType: "size", // quality, size (默认选大小，契合用户最关注的 100KB 需求)
+      customType: "size", // quality, size
       customQuality: 85,
       targetKB: 100, // 默认 100KB
       customResolution: "original",
-      outputFormat: "image/webp", // 默认推荐 WebP，压缩率与画质巅峰
-      autoWebpForSize: true, // 限制小体积时，PNG 自动采用 WebP 突破压缩瓶颈
+      outputFormat: "image/webp",
+      autoWebpForSize: true,
 
       // 快捷预设目标大小
       presetSizes: [
@@ -503,7 +428,7 @@ export default {
       processingCount: 0,
       maxConcurrent: 4,
 
-      // 表格分页配置 (优化图片多时的滚动与渲染性能)
+      // 表格分页配置
       paginationConfig: {
         current: 1,
         pageSize: 20,
@@ -592,7 +517,7 @@ export default {
           this.processQueue();
         };
       };
-      return false; // 阻止 antd 默认上传行为
+      return false;
     },
 
     generateConfig() {
@@ -620,7 +545,6 @@ export default {
       task.status = "processing";
 
       try {
-        // 调用自适应高保真压缩引擎
         const result = await compressImageAdaptive(task.rawFile, task.config);
 
         task.compressedBlob = markRaw(result.blob);
@@ -632,7 +556,6 @@ export default {
         task.actualFormat = result.actualFormat;
         task.qualityUsed = result.qualityUsed;
 
-        // 生成压缩后实时预览 DataURL
         task.compressedPreview = URL.createObjectURL(result.blob);
 
         const rate = ((task.originalSize - result.blob.size) / task.originalSize) * 100;
@@ -744,7 +667,7 @@ export default {
     }
   }
 
-  // 顶部配置面板：小巧精致、紧凑排布
+  // 顶部配置面板
   .main-card {
     background: #ffffff;
     padding: 12px 18px;
@@ -852,7 +775,6 @@ export default {
           flex-wrap: wrap;
         }
 
-        // 预设大小胶囊 (小巧精致 11px)
         .preset-pills-row {
           display: flex;
           align-items: center;
@@ -903,7 +825,6 @@ export default {
           }
         }
 
-        // 算法保障卡片 (紧凑小字)
         .engine-tip-banner {
           display: flex;
           align-items: center;
@@ -1017,7 +938,6 @@ export default {
 
     .custom-dragger {
       background: #ffffff !important;
-      border: 2px dashed #94a3b8 !important;
       border-radius: 14px !important;
       transition: all 0.2s ease-in-out;
 
@@ -1031,7 +951,7 @@ export default {
       padding: 0 !important;
     }
 
-    // 状态 1：空状态超大拖拽感应大屏 (220px+)
+    // 状态 1：空状态超大拖拽感应大屏
     .dragger-full-box {
       padding: 36px 20px;
       display: flex;
@@ -1083,7 +1003,7 @@ export default {
       }
     }
 
-    // 状态 2：已有图片时的紧凑宽幅追加栏 (仅 76px 高度，不挤占视口)
+    // 状态 2：已有图片时的紧凑宽幅追加栏
     &.upload-area-compact {
       margin-bottom: 12px;
 
@@ -1125,7 +1045,7 @@ export default {
     }
   }
 
-  // 结果列表卡片：支持吸顶与流畅多图纵向滚动
+  // 结果列表卡片
   .file-list {
     background: #ffffff;
     border-radius: 12px;
@@ -1133,7 +1053,6 @@ export default {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     overflow: hidden;
 
-    // 吸顶操作控制头
     .list-header {
       position: sticky;
       top: 0;
@@ -1186,7 +1105,6 @@ export default {
       }
     }
 
-    // 表格滚动容器与美化
     .table-scroll-wrapper {
       :deep(.ant-table-header) {
         background: #f8fafc;
@@ -1200,7 +1118,6 @@ export default {
       }
 
       :deep(.ant-table-body) {
-        // 自定义细滚动条
         &::-webkit-scrollbar {
           width: 6px;
           height: 6px;
@@ -1222,7 +1139,6 @@ export default {
         font-size: 12px;
       }
 
-      // 分页器
       :deep(.ant-pagination) {
         margin: 10px 16px;
         font-size: 12px;
@@ -1294,7 +1210,7 @@ export default {
   }
 }
 
-// 画质对比弹窗样式
+// 对比弹窗样式
 .compare-modal {
   :deep(.ant-modal-content) {
     border-radius: 14px;
@@ -1418,7 +1334,6 @@ export default {
     }
   }
 
-  // 棋盘格透明指示底纹
   .checkerboard {
     background-color: #ffffff;
     background-image: linear-gradient(45deg, #f1f5f9 25%, transparent 25%),
