@@ -1,33 +1,37 @@
 <template>
   <div class="compress-container">
     <div class="header">
-      <h1>全能图片压缩 Pro</h1>
+      <div class="title-row">
+        <h1>全能图片压缩 Pro</h1>
+        <span class="safe-badge"><safety-certificate-outlined /> 100% 纯本地高精度压缩 · 敏感图片绝不上云</span>
+      </div>
       <p class="subtitle">智能 WebP 引擎 · 突破 100KB 极限压缩 · 画质与体积的完美平衡</p>
     </div>
 
+    <!-- 顶部紧凑配置面板 -->
     <div class="main-card">
       <!-- 顶级模式切换：智能 vs 自定义 -->
-      <a-tabs v-model:activeKey="mainMode" type="card" size="large" centered>
+      <a-tabs v-model:activeKey="mainMode" type="card" centered class="compact-tabs">
         <!-- ================= 模式 1: 智能模式 (一键操作) ================= -->
         <a-tab-pane key="smart" tab="🚀 智能模式">
           <div class="smart-panel">
             <div class="smart-options">
-              <a-radio-group v-model:value="smartLevel" button-style="solid" size="large">
+              <a-radio-group v-model:value="smartLevel" button-style="solid">
                 <a-radio-button value="small"> <compress-outlined /> 体积优先 (WebP) </a-radio-button>
                 <a-radio-button value="balanced"> <check-outlined /> 平衡模式 (推荐) </a-radio-button>
                 <a-radio-button value="high"> <star-outlined /> 画质优先 </a-radio-button>
               </a-radio-group>
             </div>
 
-            <!-- 智能模式的说明文案 -->
+            <!-- 智能模式的说明文案 (紧凑小字) -->
             <div class="smart-desc">
               <div v-if="smartLevel === 'small'" class="desc-item">
                 <span class="tag tag-blue">极致压缩</span>
-                采用现代 WebP 格式，限制长边 1280px，超轻体积 (通常低于 100KB)，适合网络传输与快速加载。
+                限制长边 1280px，采用高压缩 WebP，体积超轻 (普遍低于 100KB)，适合网络传输与快速加载。
               </div>
               <div v-if="smartLevel === 'balanced'" class="desc-item">
                 <span class="tag tag-green">最佳平衡</span>
-                采用高效 WebP 编码，限制 1080P (1920px)，肉眼画质与原图无异，体积减少 60% ~ 80%！
+                限制 1080P (1920px)，采用高效 WebP 编码，肉眼画质与原图无异，体积减少 60% ~ 80%！
               </div>
               <div v-if="smartLevel === 'high'" class="desc-item">
                 <span class="tag tag-purple">原画质</span>
@@ -43,141 +47,250 @@
             <!-- 二级切换：按清晰度 vs 按大小 -->
             <div class="sub-mode-switch">
               <span class="label">压缩目标：</span>
-              <a-radio-group v-model:value="customType" button-style="solid">
-                <a-radio-button value="quality">指定清晰度 (%)</a-radio-button>
+              <a-radio-group v-model:value="customType" button-style="solid" size="small">
                 <a-radio-button value="size">
                   <thunderbolt-outlined /> 指定目标大小 (如 ≤ 100KB)
                 </a-radio-button>
+                <a-radio-button value="quality">指定清晰度 (%)</a-radio-button>
               </a-radio-group>
             </div>
 
-            <a-divider style="margin: 15px 0" />
+            <!-- A. 指定大小 (限制体积) -->
+            <div v-if="customType === 'size'" class="config-section">
+              <div class="config-row size-input-row">
+                <span class="label">目标大小：</span>
+                <a-input-number v-model:value="targetKB" :min="10" :step="10" style="width: 140px">
+                  <template #addonAfter>KB 以内</template>
+                </a-input-number>
 
-            <!-- A. 指定清晰度 (不限制大小) -->
+                <!-- 快捷预设按钮 -->
+                <div class="preset-pills-row">
+                  <span class="preset-label">快捷：</span>
+                  <span
+                    v-for="item in presetSizes"
+                    :key="item.value"
+                    class="preset-pill"
+                    :class="{ active: targetKB === item.value, highlight: item.highlight }"
+                    @click="targetKB = item.value"
+                  >
+                    {{ item.label }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- 算法保障提示 Banner (紧凑小号) -->
+              <div class="engine-tip-banner">
+                <thunderbolt-outlined class="et-icon" />
+                <div class="et-content">
+                  <b>自适应双维度平衡引擎</b>：WebP 高压缩算法协同分辨率调节，严格确保文件 <strong>≤ {{ targetKB }} KB</strong>。即便几兆超大原图也会智能协调长宽与色彩码率，<strong>彻底突破传统 JPG / PNG 压不到 100KB 或严重马赛克的困境</strong>！
+                </div>
+              </div>
+            </div>
+
+            <!-- B. 指定清晰度 (不限制大小) -->
             <div v-if="customType === 'quality'" class="config-section">
               <div class="config-row">
                 <span class="label">清晰度：</span>
-                <a-slider v-model:value="customQuality" :min="1" :max="100" style="flex: 1; max-width: 320px" />
-                <a-input-number v-model:value="customQuality" :min="1" :max="100" style="width: 100px; margin-left: 10px">
+                <a-slider v-model:value="customQuality" :min="1" :max="100" style="flex: 1; max-width: 260px" />
+                <a-input-number v-model:value="customQuality" :min="1" :max="100" size="small" style="width: 80px; margin-left: 8px">
                   <template #addonAfter>%</template>
                 </a-input-number>
               </div>
             </div>
 
-            <!-- B. 指定大小 (限制体积) -->
-            <div v-if="customType === 'size'" class="config-section">
-              <div class="config-row size-input-row">
-                <span class="label">希望大小：</span>
-                <a-input-number v-model:value="targetKB" :min="10" :step="10" size="large" style="width: 160px">
-                  <template #addonAfter>KB 以内</template>
-                </a-input-number>
-                <span class="hint">严格控制在指定数值以内，自适应最大化保留画质</span>
-              </div>
-
-              <!-- 快捷预设按钮 -->
-              <div class="preset-pills-row">
-                <span class="preset-label">快捷预设：</span>
-                <span
-                  v-for="item in presetSizes"
-                  :key="item.value"
-                  class="preset-pill"
-                  :class="{ active: targetKB === item.value, highlight: item.highlight }"
-                  @click="targetKB = item.value"
-                >
-                  {{ item.label }}
-                </span>
-              </div>
-
-              <!-- 算法保障提示 Banner -->
-              <div class="engine-tip-banner">
-                <div class="et-icon"><thunderbolt-outlined /></div>
-                <div class="et-content">
-                  <div class="et-title">自适应双维度平衡算法已激活</div>
-                  <div class="et-desc">
-                    通过 WebP 高压缩率协同动态分辨率调节，确保输出必定 <strong>≤ {{ targetKB }} KB</strong>。
-                    即便针对原图几兆、几十兆的超大图片，也会智能平衡长宽与色彩码率，<strong>彻底解决 JPG / PNG 压不到 100KB 或严重失真马赛克的问题</strong>！
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 公共高级选项 -->
+            <!-- 公共高级选项 (紧凑排布) -->
             <div class="advanced-options">
               <div class="config-row">
                 <span class="label">输出格式：</span>
-                <a-radio-group v-model:value="outputFormat" button-style="solid">
+                <a-radio-group v-model:value="outputFormat" button-style="solid" size="small">
                   <a-radio-button value="image/webp">
-                    <span class="badge-rec">强烈推荐</span> WebP (体积最小 · 画质最佳)
+                    <span class="badge-rec">推荐</span> WebP (体积最小 · 画质最佳)
                   </a-radio-button>
                   <a-radio-button value="original">原格式</a-radio-button>
                   <a-radio-button value="image/jpeg">JPG</a-radio-button>
                   <a-radio-button value="image/png">PNG</a-radio-button>
                 </a-radio-group>
-              </div>
-              <div class="format-hint">
-                💡 <b>格式建议</b>：现代浏览器 100% 完整支持 WebP 格式。在相同清晰度下，WebP 比 JPG 节省约 35%、比 PNG 节省约 70% 体积，并原生支持透明通道。若需严格压到 100KB 以下，强烈建议使用 WebP！
-              </div>
-
-              <div class="config-row" style="margin-top: 12px">
-                <span class="label">分辨率：</span>
-                <a-select v-model:value="customResolution" style="width: 220px">
-                  <a-select-option value="original">智能自适应 / 保持原分辨率</a-select-option>
-                  <a-select-option :value="1920">限制 1920px (1080P 高清)</a-select-option>
-                  <a-select-option :value="1440">限制 1440px (适合 100KB 完美画质)</a-select-option>
-                  <a-select-option :value="1280">限制 1280px (720P 网页)</a-select-option>
-                  <a-select-option :value="800">限制 800px (移动端/徽标)</a-select-option>
-                </a-select>
+                <span class="format-inline-hint">
+                  💡 WebP 比 JPG 节省约 35%、比 PNG 节省约 70% 且支持透明度。压到 100KB 以下强烈建议选 WebP！
+                </span>
               </div>
 
-              <!-- PNG 智能转码开关 (当指定小大小时) -->
-              <div v-if="customType === 'size' && outputFormat === 'original'" class="config-row sub-checkbox-row">
-                <a-checkbox v-model:checked="autoWebpForSize">
-                  <span>小体积模式下若原图为 PNG，自动采用 WebP 突破压缩瓶颈 (完好保留透明背景)</span>
-                </a-checkbox>
+              <div class="config-row inline-row">
+                <div class="inline-item">
+                  <span class="label">分辨率：</span>
+                  <a-select v-model:value="customResolution" size="small" style="width: 200px">
+                    <a-select-option value="original">智能自适应 / 保持原分辨率</a-select-option>
+                    <a-select-option :value="1920">限制 1920px (1080P 高清)</a-select-option>
+                    <a-select-option :value="1440">限制 1440px (100KB 完美平衡)</a-select-option>
+                    <a-select-option :value="1280">限制 1280px (720P 网页)</a-select-option>
+                    <a-select-option :value="800">限制 800px (移动端/徽标)</a-select-option>
+                  </a-select>
+                </div>
+
+                <!-- PNG 智能转码开关 (当指定小大小时) -->
+                <div v-if="customType === 'size' && outputFormat === 'original'" class="inline-item">
+                  <a-checkbox v-model:checked="autoWebpForSize">
+                    <span class="sub-check-text">原图为 PNG 时自动转 WebP (完好保留透明背景并突破 100KB 瓶颈)</span>
+                  </a-checkbox>
+                </div>
               </div>
             </div>
           </div>
         </a-tab-pane>
       </a-tabs>
 
-      <!-- 全局底部选项 (无论哪个模式都生效) -->
+      <!-- 全局底部选项 (紧凑排布) -->
       <div class="global-footer">
         <a-checkbox v-model:checked="removeWatermark">
           <span class="highlight-option">自动平滑移除右下角水印 (AI生成图专用)</span>
         </a-checkbox>
         <a-tooltip title="采用双向纹理采样无损修复右下角水印或 Logo">
-          <question-circle-outlined style="color: #999; margin-left: 5px" />
+          <question-circle-outlined style="color: #999; margin-left: 4px" />
         </a-tooltip>
       </div>
     </div>
 
-    <!-- 上传区域 -->
-    <div class="upload-area">
-      <a-upload-dragger name="file" :multiple="true" :showUploadList="false" :before-upload="handleUpload" accept="image/*">
-        <p class="ant-upload-drag-icon"><inbox-outlined /></p>
-        <p class="ant-upload-text">点击或将图片拖拽到这里批量压缩</p>
-        <p class="ant-upload-hint">支持 JPG、PNG、WebP、BMP、SVG 等各种格式，100% 浏览器本地高精度处理，零数据泄露</p>
+    <!-- 超大拖拽上传区域：无数据时为大尺寸主操作区，有数据时为宽幅追加区 -->
+    <div class="upload-area" :class="{ 'upload-area-compact': fileList.length > 0 }">
+      <a-upload-dragger
+        name="file"
+        :multiple="true"
+        :showUploadList="false"
+        :before-upload="handleUpload"
+        accept="image/*"
+        class="custom-dragger"
+      >
+        <!-- 状态 1：尚未添加图片，呈现大面积、宽广、易拖入的沉浸式感应大屏 -->
+        <template v-if="fileList.length === 0">
+          <div class="dragger-full-box">
+            <p class="ant-upload-drag-icon"><inbox-outlined /></p>
+            <p class="ant-upload-text">点击或将单张 / 批量图片拖拽至此区域</p>
+            <p class="ant-upload-hint">
+              全屏宽幅超大感应 · 支持 JPG、PNG、WebP、BMP、SVG 等 · 100% 本地浏览器高精处理 · 绝不上云泄露隐私
+            </p>
+            <div class="upload-pills-row">
+              <span class="u-pill">⚡ 多核并发高精处理</span>
+              <span class="u-pill">💎 突破 100KB 极限体积</span>
+              <span class="u-pill">🌈 原画级色彩还原</span>
+              <span class="u-pill">📦 一键打包 ZIP 下载</span>
+            </div>
+          </div>
+        </template>
+
+        <!-- 状态 2：已有图片，转为宽幅扁平追加栏，不挤占表格滚动的垂直视口 -->
+        <template v-else>
+          <div class="dragger-compact-box">
+            <inbox-outlined class="compact-icon" />
+            <span class="compact-title">拖入更多图片或点击继续追加批量压缩</span>
+            <span class="compact-count">(已成功导入 {{ fileList.length }} 张图片)</span>
+          </div>
+        </template>
       </a-upload-dragger>
     </div>
 
-    <!-- 结果列表 -->
+    <!-- 结果列表 (图片多时优化：固定表头、吸顶控制栏、表格内独立流畅滚动) -->
     <div class="file-list" v-if="fileList.length > 0">
+      <!-- 吸顶控制栏 -->
       <div class="list-header">
-        <span class="status-text">
-          处理进度: {{ finishedCount }} / {{ fileList.length }}
+        <div class="lh-left">
+          <span class="status-text">
+            处理进度: <b>{{ finishedCount }}</b> / {{ fileList.length }}
+          </span>
           <span v-if="totalSaved > 0" class="saved-tag">
             累计节省流量: <b>{{ formatSize(totalSaved) }}</b>
           </span>
-        </span>
-        <div>
-          <a-button type="primary" :disabled="finishedCount === 0" @click="downloadAll">
+          <span v-if="processingCount > 0" class="processing-hint">
+            <loading-outlined /> {{ processingCount }} 个任务并发压缩中...
+          </span>
+        </div>
+        <div class="lh-right">
+          <a-button type="primary" :disabled="finishedCount === 0" @click="downloadAll" class="download-all-btn">
             <template #icon><download-outlined /></template> 打包下载全部 (ZIP)
           </a-button>
-          <a-button type="text" danger @click="clearList" style="margin-left: 10px">清空列表</a-button>
+          <a-button type="text" danger @click="clearList" style="margin-left: 8px">清空列表</a-button>
         </div>
       </div>
 
-      <a-table :columns="columns" :data-source="fileList" :pagination="false" row-key="id" size="middle" bordered>
+      <!-- 表格：固定表头，限制纵向滚动高度，支持紧凑分页 -->
+      <div class="table-scroll-wrapper">
+        <a-table
+          :columns="columns"
+          :data-source="fileList"
+          :pagination="paginationConfig"
+          :scroll="{ x: 860, y: 520 }"
+          row-key="id"
+          size="small"
+          bordered
+          class="compress-table"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'thumbnail'">
+              <img :src="record.preview" class="table-thumb" @click="openCompareModal(record)" title="点击查看画质对比" />
+            </template>
+
+            <template v-if="column.key === 'originalInfo'">
+              <div class="info-cell">
+                <span class="size-text">{{ record.originalSizeStr }}</span>
+                <span class="dim-text" v-if="record.originalWidth">
+                  {{ record.originalWidth }} × {{ record.originalHeight }}
+                </span>
+              </div>
+            </template>
+
+            <template v-if="column.key === 'status'">
+              <a-tag v-if="record.status === 'processing'" color="blue"><loading-outlined /> 平衡压缩中...</a-tag>
+              <a-tag v-else-if="record.status === 'done'" color="success">压缩完成</a-tag>
+              <a-tag v-else-if="record.status === 'error'" color="error">处理失败</a-tag>
+              <a-tag v-else color="default">排队等待中</a-tag>
+            </template>
+
+            <template v-if="column.key === 'compressedInfo'">
+              <div v-if="record.status === 'done'" class="info-cell">
+                <div class="result-size-line">
+                  <span class="compressed-size-val">{{ formatSize(record.compressedSize) }}</span>
+                  <a-tag color="cyan" class="format-tag">{{ formatMimeName(record.actualFormat) }}</a-tag>
+                </div>
+                <span class="dim-text" v-if="record.compressedWidth">
+                  {{ record.compressedWidth }} × {{ record.compressedHeight }}
+                </span>
+              </div>
+              <span v-else>-</span>
+            </template>
+
+            <template v-if="column.key === 'compressRate'">
+              <div v-if="record.status === 'done'">
+                <div :class="record.compressRate > 0 ? 'green-text' : 'red-text'">
+                  {{ record.compressRate > 0 ? "-" : "+" }}{{ Math.abs(record.compressRate) }}%
+                </div>
+              </div>
+              <span v-else>-</span>
+            </template>
+
+            <template v-if="column.key === 'action'">
+              <a-space size="small">
+                <a-button
+                  type="link"
+                  size="small"
+                  :disabled="record.status !== 'done'"
+                  @click="openCompareModal(record)"
+                >
+                  <eye-outlined /> 画质对比
+                </a-button>
+                <a-button
+                  type="primary"
+                  size="small"
+                  ghost
+                  :disabled="record.status !== 'done'"
+                  @click="downloadOne(record)"
+                >
+                  <download-outlined /> 下载
+                </a-button>
+              </a-space>
+            </template>
+          </template>
+        </a-table>
+      </div>
+    </div>
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'thumbnail'">
             <img :src="record.preview" class="table-thumb" @click="openCompareModal(record)" title="点击查看画质对比" />
@@ -329,6 +442,7 @@ import {
   EyeOutlined,
   ArrowRightOutlined,
   ThunderboltOutlined,
+  SafetyCertificateOutlined,
 } from "@ant-design/icons-vue";
 import { markRaw } from "vue";
 import JSZip from "jszip";
@@ -348,6 +462,7 @@ export default {
     EyeOutlined,
     ArrowRightOutlined,
     ThunderboltOutlined,
+    SafetyCertificateOutlined,
   },
   data() {
     return {
@@ -388,8 +503,22 @@ export default {
       processingCount: 0,
       maxConcurrent: 4,
 
+      // 表格分页配置 (优化图片多时的滚动与渲染性能)
+      paginationConfig: {
+        current: 1,
+        pageSize: 20,
+        showSizeChanger: true,
+        pageSizeOptions: ["10", "20", "50", "100"],
+        showTotal: (total) => `共 ${total} 张图片`,
+        size: "small",
+        onChange: (page, pageSize) => {
+          this.paginationConfig.current = page;
+          this.paginationConfig.pageSize = pageSize;
+        },
+      },
+
       columns: [
-        { title: "缩略图", key: "thumbnail", width: 70, align: "center" },
+        { title: "缩略图", key: "thumbnail", width: 68, align: "center" },
         { title: "文件名", dataIndex: "name", key: "name", ellipsis: true },
         { title: "原始参数", key: "originalInfo", width: 140 },
         { title: "状态", key: "status", width: 120 },
@@ -532,7 +661,7 @@ export default {
       else if (type === "image/webp") ext = "webp";
 
       const baseName = record.name.replace(/\.[^/.]+$/, "");
-      saveAs(record.compressedBlob, `${baseName}_min.${ext}`);
+      saveAs(record.compressedBlob, `${baseName}.${ext}`);
     },
 
     async downloadAll() {
@@ -546,7 +675,7 @@ export default {
           else if (type === "image/webp") ext = "webp";
 
           const baseName = f.name.replace(/\.[^/.]+$/, "");
-          zip.file(`${baseName}_min.${ext}`, f.compressedBlob);
+          zip.file(`${baseName}.${ext}`, f.compressedBlob);
         }
       });
       const content = await zip.generateAsync({ type: "blob" });
@@ -562,6 +691,7 @@ export default {
       this.fileList = [];
       this.queue = [];
       this.processingCount = 0;
+      this.paginationConfig.current = 1;
     },
   },
 };
@@ -569,56 +699,98 @@ export default {
 
 <style lang="scss" scoped>
 .compress-container {
-  max-width: 900px;
-  margin: 30px auto;
+  max-width: 1360px;
+  width: 95%;
+  margin: 16px auto 36px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   .header {
     text-align: center;
-    margin-bottom: 30px;
-    h1 {
-      color: #1f2937;
-      margin-bottom: 5px;
-      font-weight: 700;
+    margin-bottom: 16px;
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 4px;
+
+      h1 {
+        color: #0f172a;
+        margin: 0;
+        font-size: 21px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+      }
+
+      .safe-badge {
+        font-size: 11px;
+        color: #059669;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
     }
+
     .subtitle {
-      color: #6b7280;
-      font-size: 14px;
+      color: #64748b;
+      font-size: 12px;
+      margin: 0;
     }
   }
 
+  // 顶部配置面板：小巧精致、紧凑排布
   .main-card {
-    background: #fff;
-    padding: 25px;
-    border-radius: 16px;
-    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
-    margin-bottom: 25px;
+    background: #ffffff;
+    padding: 12px 18px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 14px;
+
+    .compact-tabs :deep(.ant-tabs-nav) {
+      margin-bottom: 8px;
+    }
+
+    .compact-tabs :deep(.ant-tabs-tab) {
+      padding: 6px 14px;
+      font-size: 13px;
+    }
 
     // 智能模式样式
     .smart-panel {
-      padding: 10px 0;
+      padding: 4px 0;
       text-align: center;
+
       .smart-options {
-        margin-bottom: 20px;
+        margin-bottom: 8px;
       }
+
       .smart-desc {
-        background: #f9fafb;
-        padding: 15px;
-        border-radius: 8px;
+        background: #f8fafc;
+        padding: 8px 14px;
+        border-radius: 6px;
         display: inline-block;
         text-align: left;
-        min-width: 300px;
+        max-width: 680px;
+        border: 1px solid #f1f5f9;
 
         .desc-item {
-          color: #4b5563;
-          font-size: 14px;
-          line-height: 1.6;
+          color: #475569;
+          font-size: 12px;
+          line-height: 1.5;
+
           .tag {
-            padding: 2px 8px;
+            padding: 1px 6px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
-            margin-right: 8px;
+            margin-right: 6px;
           }
           .tag-blue {
             background: #e0f2fe;
@@ -638,58 +810,66 @@ export default {
 
     // 自定义模式样式
     .custom-panel {
-      padding: 10px;
+      padding: 2px 4px;
+
       .sub-mode-switch {
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 10px;
+        margin-bottom: 8px;
+
         .label {
           font-weight: 600;
-          color: #374151;
+          color: #334155;
+          font-size: 12px;
         }
       }
 
       .config-section {
-        margin: 20px 0;
+        margin: 8px 0;
+
         .config-row {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
+
           .label {
-            width: 80px;
+            width: 72px;
             text-align: right;
-            font-weight: 500;
-            color: #555;
-          }
-          .hint {
+            font-weight: 600;
+            color: #475569;
             font-size: 12px;
+          }
+
+          .hint {
+            font-size: 11px;
             color: #64748b;
           }
         }
 
         .size-input-row {
-          margin-bottom: 12px;
+          margin-bottom: 8px;
+          flex-wrap: wrap;
         }
 
-        // 预设大小胶囊
+        // 预设大小胶囊 (小巧精致 11px)
         .preset-pills-row {
           display: flex;
           align-items: center;
           flex-wrap: wrap;
-          gap: 8px;
-          margin-left: 90px;
-          margin-bottom: 16px;
+          gap: 6px;
+          margin-left: 10px;
 
           .preset-label {
-            font-size: 12px;
+            font-size: 11px;
             color: #64748b;
             font-weight: 500;
           }
 
           .preset-pill {
-            font-size: 12px;
-            padding: 3px 10px;
-            border-radius: 14px;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
             background: #f1f5f9;
             color: #475569;
             cursor: pointer;
@@ -699,63 +879,55 @@ export default {
 
             &:hover {
               background: #e2e8f0;
-              color: #1e293b;
+              color: #0f172a;
             }
 
             &.active {
-              background: #1677ff;
+              background: #2563eb;
               color: #ffffff;
-              border-color: #1677ff;
+              border-color: #2563eb;
               font-weight: 600;
             }
 
             &.highlight {
-              border-color: #93c5fd;
+              border-color: #bfdbfe;
               background: #eff6ff;
               color: #1d4ed8;
               font-weight: 600;
 
               &.active {
-                background: #1677ff;
+                background: #2563eb;
                 color: #ffffff;
               }
             }
           }
         }
 
-        // 算法保障卡片
+        // 算法保障卡片 (紧凑小字)
         .engine-tip-banner {
           display: flex;
-          gap: 12px;
+          align-items: center;
+          gap: 8px;
           background: #f0fdf4;
           border: 1px solid #bbf7d0;
-          padding: 12px 16px;
-          border-radius: 8px;
-          margin-left: 90px;
-          margin-top: 10px;
+          padding: 6px 12px;
+          border-radius: 6px;
+          margin-left: 80px;
+          margin-top: 6px;
+          font-size: 11px;
+          color: #166534;
+          line-height: 1.4;
 
           .et-icon {
-            font-size: 20px;
+            font-size: 15px;
             color: #16a34a;
-            line-height: 1;
-            margin-top: 2px;
+            flex-shrink: 0;
           }
 
           .et-content {
             flex: 1;
-            .et-title {
-              font-size: 13px;
-              font-weight: 700;
+            strong {
               color: #15803d;
-              margin-bottom: 4px;
-            }
-            .et-desc {
-              font-size: 12px;
-              color: #4b5563;
-              line-height: 1.5;
-              strong {
-                color: #15803d;
-              }
             }
           }
         }
@@ -763,49 +935,59 @@ export default {
 
       .advanced-options {
         background: #f8fafc;
-        padding: 16px 20px;
-        border-radius: 10px;
-        margin-top: 15px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        margin-top: 8px;
         border: 1px solid #e2e8f0;
 
         .config-row {
           display: flex;
           align-items: center;
-          gap: 12px;
-          margin-bottom: 10px;
+          gap: 8px;
+          margin-bottom: 6px;
+
           &:last-child {
             margin-bottom: 0;
           }
+
           .label {
-            width: 80px;
+            width: 72px;
             text-align: right;
             font-weight: 600;
             color: #475569;
+            font-size: 12px;
+          }
+        }
+
+        .inline-row {
+          flex-wrap: wrap;
+          gap: 16px;
+
+          .inline-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
           }
         }
 
         .badge-rec {
           background: #fee2e2;
           color: #dc2626;
-          font-size: 10px;
+          font-size: 9px;
           font-weight: 700;
-          padding: 1px 5px;
-          border-radius: 3px;
-          margin-right: 4px;
+          padding: 0 4px;
+          border-radius: 2px;
+          margin-right: 3px;
         }
 
-        .format-hint {
-          font-size: 12px;
+        .format-inline-hint {
+          font-size: 11px;
           color: #64748b;
-          margin-left: 92px;
-          margin-bottom: 8px;
-          line-height: 1.5;
+          margin-left: 8px;
         }
 
-        .sub-checkbox-row {
-          margin-left: 92px;
-          margin-top: 10px;
-          font-size: 12px;
+        .sub-check-text {
+          font-size: 11px;
           color: #475569;
         }
       }
@@ -813,67 +995,243 @@ export default {
 
     // 全局底部
     .global-footer {
-      margin-top: 25px;
-      padding-top: 20px;
-      border-top: 1px dashed #e5e7eb;
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px dashed #e2e8f0;
       display: flex;
       justify-content: center;
       align-items: center;
+      font-size: 12px;
 
       .highlight-option {
         font-weight: 500;
-        color: #1677ff;
+        color: #2563eb;
       }
     }
   }
 
+  // 超大宽幅拖拽上传区域
   .upload-area {
-    margin-bottom: 25px;
-    :deep(.ant-upload-drag) {
-      border-radius: 12px;
-      background: #fafafa;
-      border: 2px dashed #d1d5db;
+    margin-bottom: 16px;
+    transition: all 0.25s ease;
+
+    .custom-dragger {
+      background: #ffffff !important;
+      border: 2px dashed #94a3b8 !important;
+      border-radius: 14px !important;
+      transition: all 0.2s ease-in-out;
+
       &:hover {
-        border-color: #3b82f6;
-        background: #eff6ff;
+        border-color: #2563eb !important;
+        background: #f0f7ff !important;
+      }
+    }
+
+    :deep(.ant-upload-btn) {
+      padding: 0 !important;
+    }
+
+    // 状态 1：空状态超大拖拽感应大屏 (220px+)
+    .dragger-full-box {
+      padding: 36px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+
+      .ant-upload-drag-icon {
+        font-size: 52px;
+        color: #2563eb;
+        margin-bottom: 12px;
+        transition: transform 0.2s;
+      }
+
+      .ant-upload-text {
+        font-size: 17px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 6px;
+      }
+
+      .ant-upload-hint {
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 16px;
+        max-width: 680px;
+        line-height: 1.5;
+      }
+
+      .upload-pills-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+
+        .u-pill {
+          font-size: 11px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          color: #475569;
+          padding: 3px 10px;
+          border-radius: 12px;
+          font-weight: 500;
+        }
+      }
+
+      &:hover .ant-upload-drag-icon {
+        transform: translateY(-3px) scale(1.05);
+      }
+    }
+
+    // 状态 2：已有图片时的紧凑宽幅追加栏 (仅 76px 高度，不挤占视口)
+    &.upload-area-compact {
+      margin-bottom: 12px;
+
+      .custom-dragger {
+        border-width: 1.5px !important;
+        border-style: dashed !important;
+        border-color: #cbd5e1 !important;
+        background: #f8fafc !important;
+
+        &:hover {
+          background: #eff6ff !important;
+          border-color: #2563eb !important;
+        }
+      }
+
+      .dragger-compact-box {
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+
+        .compact-icon {
+          font-size: 22px;
+          color: #2563eb;
+        }
+
+        .compact-title {
+          font-size: 13px;
+          font-weight: 600;
+          color: #1e293b;
+        }
+
+        .compact-count {
+          font-size: 12px;
+          color: #64748b;
+        }
       }
     }
   }
 
+  // 结果列表卡片：支持吸顶与流畅多图纵向滚动
   .file-list {
-    background: #fff;
+    background: #ffffff;
     border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     overflow: hidden;
 
+    // 吸顶操作控制头
     .list-header {
-      padding: 12px 20px;
-      background: #f8fafc;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 10px 18px;
+      background: rgba(248, 250, 252, 0.96);
+      backdrop-filter: blur(8px);
       border-bottom: 1px solid #e2e8f0;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      .status-text {
-        font-weight: 600;
-        color: #475569;
-        font-size: 14px;
+      flex-wrap: wrap;
+      gap: 10px;
+
+      .lh-left {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 14px;
+        flex-wrap: wrap;
       }
+
+      .status-text {
+        font-weight: 600;
+        color: #334155;
+        font-size: 13px;
+
+        b {
+          color: #2563eb;
+        }
+      }
+
       .saved-tag {
-        color: #16a34a;
+        color: #15803d;
         background: #ecfdf5;
-        padding: 2px 10px;
-        border-radius: 12px;
+        padding: 2px 8px;
+        border-radius: 10px;
         border: 1px solid #a7f3d0;
+        font-size: 11px;
+      }
+
+      .processing-hint {
+        font-size: 12px;
+        color: #2563eb;
+      }
+
+      .download-all-btn {
+        background: #2563eb;
+        font-weight: 600;
+        box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2);
+      }
+    }
+
+    // 表格滚动容器与美化
+    .table-scroll-wrapper {
+      :deep(.ant-table-header) {
+        background: #f8fafc;
+        th {
+          font-size: 12px;
+          font-weight: 600;
+          color: #475569;
+          background: #f8fafc !important;
+          padding: 8px 12px;
+        }
+      }
+
+      :deep(.ant-table-body) {
+        // 自定义细滚动条
+        &::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        &::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 3px;
+          &:hover {
+            background: #94a3b8;
+          }
+        }
+        &::-webkit-scrollbar-track {
+          background: #f8fafc;
+        }
+      }
+
+      :deep(.ant-table-tbody > tr > td) {
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+
+      // 分页器
+      :deep(.ant-pagination) {
+        margin: 10px 16px;
         font-size: 12px;
       }
     }
 
     .table-thumb {
-      width: 48px;
-      height: 48px;
+      width: 44px;
+      height: 44px;
       object-fit: cover;
       border-radius: 6px;
       border: 1px solid #e2e8f0;
@@ -887,14 +1245,16 @@ export default {
     .info-cell {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 1px;
+
       .size-text {
         font-weight: 600;
-        color: #1e293b;
-        font-size: 13px;
+        color: #0f172a;
+        font-size: 12px;
       }
+
       .dim-text {
-        font-size: 11px;
+        font-size: 10px;
         color: #94a3b8;
         font-family: ui-monospace, monospace;
       }
@@ -904,16 +1264,18 @@ export default {
       display: flex;
       align-items: center;
       gap: 6px;
+
       .compressed-size-val {
         font-weight: 700;
         color: #15803d;
-        font-size: 14px;
+        font-size: 13px;
         font-family: ui-monospace, monospace;
       }
+
       .format-tag {
-        font-size: 10px;
+        font-size: 9px;
         padding: 0 4px;
-        line-height: 18px;
+        line-height: 16px;
         margin: 0;
         font-weight: bold;
       }
@@ -922,11 +1284,12 @@ export default {
     .green-text {
       color: #16a34a;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 12px;
     }
+
     .red-text {
       color: #dc2626;
-      font-size: 12px;
+      font-size: 11px;
     }
   }
 }
@@ -935,13 +1298,13 @@ export default {
 .compare-modal {
   :deep(.ant-modal-content) {
     border-radius: 14px;
-    padding: 20px 24px;
+    padding: 18px 22px;
   }
 
   .compare-container {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
   }
 
   .metrics-comparison-bar {
@@ -951,13 +1314,14 @@ export default {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
-    padding: 12px 20px;
+    padding: 10px 18px;
 
     .metric-card {
       display: flex;
       flex-direction: column;
       align-items: center;
       min-width: 140px;
+
       .m-tag {
         font-size: 11px;
         color: #64748b;
@@ -968,7 +1332,7 @@ export default {
         color: #15803d;
       }
       .m-size {
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 800;
         color: #0f172a;
         font-family: ui-monospace, monospace;
@@ -977,7 +1341,7 @@ export default {
         color: #16a34a;
       }
       .m-sub {
-        font-size: 11px;
+        font-size: 10px;
         color: #94a3b8;
         font-family: ui-monospace, monospace;
       }
@@ -987,16 +1351,16 @@ export default {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
 
       .rate-badge {
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 700;
         color: #16a34a;
         background: #ecfdf5;
         border: 1px solid #a7f3d0;
-        padding: 2px 10px;
-        border-radius: 12px;
+        padding: 1px 8px;
+        border-radius: 10px;
       }
     }
   }
@@ -1004,7 +1368,7 @@ export default {
   .views-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: 14px;
 
     .view-panel {
       border: 1px solid #e2e8f0;
@@ -1018,10 +1382,10 @@ export default {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 8px 12px;
+        padding: 6px 12px;
         background: #f8fafc;
         border-bottom: 1px solid #e2e8f0;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
         color: #334155;
 
@@ -1036,18 +1400,18 @@ export default {
       }
 
       .image-viewport {
-        height: 340px;
+        height: 320px;
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: auto;
-        padding: 10px;
+        padding: 8px;
 
         .preview-img {
           max-width: 100%;
           max-height: 100%;
           object-fit: contain;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
           border-radius: 4px;
         }
       }
@@ -1069,14 +1433,14 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 12px;
+    padding-top: 10px;
     border-top: 1px solid #f1f5f9;
 
     .cf-hint {
-      font-size: 12px;
+      font-size: 11px;
       color: #64748b;
       max-width: 650px;
-      line-height: 1.5;
+      line-height: 1.4;
     }
   }
 }
