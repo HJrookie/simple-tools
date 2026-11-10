@@ -142,7 +142,7 @@ export default {
           category: "media",
         },
         {
-          title: "图片压缩工具",
+          title: "img-image-图片压缩工具",
           description: "可以支持上传图片，压缩后下载，支持批量处理。",
           to: "/tools/image-compress",
           icon: CompressOutlined,
