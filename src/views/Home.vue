@@ -128,7 +128,7 @@ export default {
           category: "media",
         },
         {
-          title: "图片无损放大 (超分辨率)",
+          title: "img-image-图片无损放大 (超分辨率)",
           description: "纯前端本地执行，结合 AI 神经网络与 Lanczos-3+CAS 边缘自适应锐化，支持 2x~4x 几乎无损放大。",
           to: "/tools/image-upscaler",
           icon: ZoomInOutlined,
